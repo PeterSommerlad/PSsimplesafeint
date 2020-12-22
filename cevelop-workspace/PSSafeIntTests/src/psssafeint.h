@@ -174,7 +174,7 @@ to_int(E val) noexcept { // promote keeping signedness
 template<a_safeint E>
 constexpr auto
 to_underlying(E val) noexcept { // plain value with all bad properties
-    return static_cast<ULT<E>>(val);
+    return static_cast<std::underlying_type_t<E>>(val);
 }
 
 
