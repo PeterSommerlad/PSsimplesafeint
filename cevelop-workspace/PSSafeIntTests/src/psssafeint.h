@@ -173,6 +173,13 @@ to_int(E val) noexcept { // promote keeping signedness
 }
 template<a_safeint E>
 constexpr auto
+to_underlying(E val) noexcept { // plain value with all bad properties
+    return static_cast<ULT<E>>(val);
+}
+
+
+template<a_safeint E>
+constexpr auto
 to_uint(E val) noexcept { // promote to unsigned for wrap around arithmetic
     using u_result_t = std::make_unsigned_t<decltype(+std::declval<promoted_t<E>>())>;
     using s_result_t = std::make_signed_t<u_result_t>;
@@ -204,7 +211,6 @@ requires std::is_signed_v<ULT<E>> {
 template<a_safeint E>
 constexpr E&
 operator++(E& l) noexcept {
-
     return l = static_cast<E>(1u + to_uint(l));
 }
 
@@ -218,7 +224,6 @@ operator++(E& l, int) noexcept {
 template<a_safeint E>
 constexpr E&
 operator--(E& l) noexcept {
-
     return l = static_cast<E>(to_uint(l) - 1u);
 }
 

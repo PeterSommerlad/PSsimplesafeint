@@ -42,6 +42,9 @@ static_assert(0x7fff'ffff_si32+2_si32 == -0x7fff'ffff_si32);
 static_assert(-0x7fff'ffff_si32 - 2_si32 == 0x7fff'ffff_si32);
 //static_assert(-0x7fff'ffff - 2); // doesn't compile, integer overflow
 
+static_assert(std::is_same_v<int,decltype(+to_underlying(42_ui8))>);
+static_assert(std::is_same_v<uint8_t,decltype(to_underlying(42_ui8))>);
+
 
 template<typename T, typename WHAT>
 constexpr bool
