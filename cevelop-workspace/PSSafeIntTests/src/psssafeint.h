@@ -7,6 +7,7 @@
 #include <iosfwd>
 #include <limits>
 #include <climits>
+#include <concepts> // std::integral
 
 namespace psssint { // Peter Sommerlad's simple safe integers
 
@@ -125,15 +126,6 @@ is_scoped_enum_v = !std::is_convertible_v<T, std::underlying_type_t<T>>;
 template<typename T>
 concept a_scoped_enum = is_scoped_enum_v<T>;
 
-namespace superfluous{
-template<a_scoped_enum E>
-//template<typename E, auto = std::enable_if_t<is_scoped_enum_v<E>,void*>{nullptr}>
-constexpr bool
-is_smallint_v =  (sizeof(std::underlying_type_t<E>) <= sizeof(int));
-
-template<typename E>
-concept a_smallint = is_smallint_v<E>;
-}
 
 // detection concept
 
@@ -177,7 +169,6 @@ to_underlying(E val) noexcept { // plain value with all bad properties
     return static_cast<std::underlying_type_t<E>>(val);
 }
 
-
 template<a_safeint E>
 constexpr auto
 to_uint(E val) noexcept { // promote to unsigned for wrap around arithmetic
@@ -185,6 +176,62 @@ to_uint(E val) noexcept { // promote to unsigned for wrap around arithmetic
     using s_result_t = std::make_signed_t<u_result_t>;
     return static_cast<u_result_t>(static_cast<s_result_t>(to_int(val)));
 }
+
+template<std::integral T>
+constexpr bool
+is_integer_v =  std::is_same_v<uint8_t, T> ||
+                std::is_same_v<uint16_t, T> ||
+                std::is_same_v<uint32_t, T> ||
+                std::is_same_v<uint64_t, T> ||
+                std::is_same_v<int8_t, T> ||
+                std::is_same_v<int16_t, T> ||
+                std::is_same_v<int32_t, T> ||
+                std::is_same_v<int64_t, T>;
+
+template<typename T>
+concept an_integer = is_integer_v<T>;
+
+
+template<an_integer T>
+constexpr auto
+from_int(T val) {
+    using std::is_same_v;
+    using std::conditional_t;
+    struct cannot_convert_integer{};
+    using result_t =
+            conditional_t<is_same_v<uint8_t,T>, ui8,
+             conditional_t<is_same_v<uint16_t,T>, ui16,
+              conditional_t<is_same_v<uint32_t,T>, ui32,
+               conditional_t<is_same_v<uint64_t,T>, ui64,
+                conditional_t<is_same_v<int8_t,T>, si8,
+                 conditional_t<is_same_v<int16_t,T>, si16,
+                  conditional_t<is_same_v<int32_t,T>, si32,
+                   conditional_t<is_same_v<int64_t,T>, si64, cannot_convert_integer>>>>>>>>;
+    return static_cast<result_t>(val);
+}
+template<a_safeint TO, an_integer FROM>
+constexpr TO
+from_int_to(FROM val) {
+    using std::is_same_v;
+    using std::conditional_t;
+    using result_t = TO;
+    if constexpr(std::is_unsigned_v<std::underlying_type_t<result_t>>){
+        if (val <= std::numeric_limits<std::underlying_type_t<result_t>>::max()) {
+            return static_cast<result_t>(val);
+        } else {
+            throw "integral constant too large";
+        }
+    } else {
+        if (val <= std::numeric_limits<std::underlying_type_t<result_t>>::max() &&
+            val >= std::numeric_limits<std::underlying_type_t<result_t>>::min()) {
+            return static_cast<result_t>(val);
+        } else {
+            throw "integral constant out of range";
+        }
+    }
+
+}
+
 
 // comparison
 // not needed, we won't mix types in comparison.

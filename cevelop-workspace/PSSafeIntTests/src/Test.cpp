@@ -45,6 +45,10 @@ static_assert(-0x7fff'ffff_si32 - 2_si32 == 0x7fff'ffff_si32);
 static_assert(std::is_same_v<int,decltype(+to_underlying(42_ui8))>);
 static_assert(std::is_same_v<uint8_t,decltype(to_underlying(42_ui8))>);
 
+static_assert(1_ui8 == from_int(uint8_t(1)));
+static_assert(42_si8 == from_int_to<si8>(42));
+//static_assert(32_ui8 == from_int(' ')); // does not compile
+//static_assert(1_ui8 == from_int_to<ui8>(true)); // does not compile
 
 template<typename T, typename WHAT>
 constexpr bool
@@ -263,6 +267,11 @@ void si8division(){
 }
 
 
+void checkedFromInt(){
+    using namespace psssint;
+    ASSERT_THROWS(from_int_to<ui8>(2400u), char const *);
+}
+
 
 
 
@@ -304,7 +313,8 @@ bool runAllTests(int argc, char const *argv[]) {
     s.push_back(CUTE(ui16canbepreincremented));
     s.push_back(CUTE(ui16canbepostincremented));
     s.push_back(CUTE(ui16canbepredecremented));
-    s.push_back(CUTE(ui16canbepostdecremented));	cute::xml_file_opener xmlfile(argc, argv);
+    s.push_back(CUTE(ui16canbepostdecremented));
+	s.push_back(CUTE(checkedFromInt));	cute::xml_file_opener xmlfile(argc, argv);
     cute::xml_listener<cute::ide_listener<>> lis(xmlfile.out);
     auto runner = cute::makeRunner(lis, argc, argv);
     bool success = runner(s, "AllTests");
