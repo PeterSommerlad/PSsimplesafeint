@@ -12,21 +12,21 @@ using namespace psssint::literals;
 
 namespace _testing {
 using namespace psssint;
-static_assert(is_safeint_v<ui8>);
-static_assert(is_safeint_v<ui16>);
-static_assert(is_safeint_v<ui32>);
-static_assert(is_safeint_v<ui64>);
-static_assert(is_safeint_v<si8>);
-static_assert(is_safeint_v<si16>);
-static_assert(is_safeint_v<si32>);
-static_assert(is_safeint_v<si64>);
+static_assert(detail_::is_safeint_v<ui8>);
+static_assert(detail_::is_safeint_v<ui16>);
+static_assert(detail_::is_safeint_v<ui32>);
+static_assert(detail_::is_safeint_v<ui64>);
+static_assert(detail_::is_safeint_v<si8>);
+static_assert(detail_::is_safeint_v<si16>);
+static_assert(detail_::is_safeint_v<si32>);
+static_assert(detail_::is_safeint_v<si64>);
 enum class enum4test{};
-static_assert(!is_safeint_v<enum4test>);
-static_assert(!is_safeint_v<std::byte>);
+static_assert(!detail_::is_safeint_v<enum4test>);
+static_assert(!detail_::is_safeint_v<std::byte>);
 static_assert(std::is_same_v<unsigned,decltype(to_int(1_ui8)+1)>);
 static_assert(std::is_same_v<unsigned,decltype(to_int(2_ui16)+1)>);
-static_assert(std::is_same_v<int8_t,decltype(to_int(1_si8))>);
-static_assert(std::is_same_v<int16_t,decltype(to_int(2_si16))>);
+static_assert(std::is_same_v<int,decltype(to_int(1_si8))>);
+static_assert(std::is_same_v<int,decltype(to_int(2_si16))>);
 static_assert(std::is_same_v<uint8_t,std::underlying_type_t<ui8>>);
 static_assert(std::is_same_v<uint16_t,std::underlying_type_t<ui16>>);
 
