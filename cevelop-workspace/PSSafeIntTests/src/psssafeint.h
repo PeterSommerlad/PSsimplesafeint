@@ -7,7 +7,9 @@
 #include <iosfwd>
 #include <limits>
 #include <climits>
+#ifdef __cpp_concepts
 #include <concepts> // std::integral
+#endif
 
 namespace psssint { // Peter Sommerlad's simple safe integers
 
@@ -165,14 +167,14 @@ using promoted_t = // will promote keeping signedness
 
 template<typename T>
 constexpr bool
-is_known_integer_v =    std::is_same_v<uint8_t, T> ||
-                        std::is_same_v<uint16_t, T> ||
-                        std::is_same_v<uint32_t, T> ||
-                        std::is_same_v<uint64_t, T> ||
-                        std::is_same_v<int8_t, T> ||
-                        std::is_same_v<int16_t, T> ||
-                        std::is_same_v<int32_t, T> ||
-                        std::is_same_v<int64_t, T>;
+is_known_integer_v =    std::is_same_v<std::uint8_t, T> ||
+                        std::is_same_v<std::uint16_t, T> ||
+                        std::is_same_v<std::uint32_t, T> ||
+                        std::is_same_v<std::uint64_t, T> ||
+                        std::is_same_v<std::int8_t, T> ||
+                        std::is_same_v<std::int16_t, T> ||
+                        std::is_same_v<std::int32_t, T> ||
+                        std::is_same_v<std::int64_t, T>;
 
 
 }
@@ -261,14 +263,14 @@ from_int(T val) {
     using std::conditional_t;
     struct cannot_convert_integer{};
     using result_t =
-            conditional_t<is_same_v<uint8_t,T>, ui8,
-             conditional_t<is_same_v<uint16_t,T>, ui16,
-              conditional_t<is_same_v<uint32_t,T>, ui32,
-               conditional_t<is_same_v<uint64_t,T>, ui64,
-                conditional_t<is_same_v<int8_t,T>, si8,
-                 conditional_t<is_same_v<int16_t,T>, si16,
-                  conditional_t<is_same_v<int32_t,T>, si32,
-                   conditional_t<is_same_v<int64_t,T>, si64, cannot_convert_integer>>>>>>>>;
+            conditional_t<is_same_v<std::uint8_t,T>, ui8,
+             conditional_t<is_same_v<std::uint16_t,T>, ui16,
+              conditional_t<is_same_v<std::uint32_t,T>, ui32,
+               conditional_t<is_same_v<std::uint64_t,T>, ui64,
+                conditional_t<is_same_v<std::int8_t,T>, si8,
+                 conditional_t<is_same_v<std::int16_t,T>, si16,
+                  conditional_t<is_same_v<std::int32_t,T>, si32,
+                   conditional_t<is_same_v<std::int64_t,T>, si64, cannot_convert_integer>>>>>>>>;
     return static_cast<result_t>(val);
 }
 #ifdef __cpp_concepts
@@ -848,11 +850,6 @@ requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<
 
 
 
-//template<a_safeint E>
-//std::ostream& operator<<(std::ostream &out, E value){
-//    out << +to_int(value); // + triggers promotion and prevents outputting char
-//    return out;
-//}
 #ifdef __cpp_concepts
 template<a_safeint E>
 #else
@@ -862,7 +859,7 @@ std::enable_if_t<
 ,bool> = true>
 #endif
 std::ostream& operator<<(std::ostream &out, E value){
-    out << to_int(value); // + triggers promotion and prevents outputting char
+    out << to_int(value);
     return out;
 }
 
