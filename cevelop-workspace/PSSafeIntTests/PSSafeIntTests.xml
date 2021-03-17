@@ -1,5 +1,5 @@
 <testsuites>
-	<testsuite name="AllTests" tests="38">
+	<testsuite name="AllTests" tests="41">
 		<testcase classname="AllTests" name="ui16intExists"/>
 		<testcase classname="AllTests" name="ui16NotEqualAutomaticInCpp20"/>
 		<testcase classname="AllTests" name="ui16canbeadded"/>
@@ -38,5 +38,8 @@
 		<testcase classname="AllTests" name="checkedFromInt"/>
 		<testcase classname="AllTests" name="si8OutputAsInteger"/>
 		<testcase classname="AllTests" name="ui8OutputAsInteger"/>
+		<testcase classname="AllTests" name="ui16canbecompared"/>
+		<testcase classname="AllTests" name="ui16canNotbecomparedwithui8"/>
+		<testcase classname="AllTests" name="ui32CanNotbeComparedwithlong"/>
 	</testsuite>
 </testsuites>
