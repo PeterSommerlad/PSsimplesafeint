@@ -19,6 +19,9 @@ enum class si32;  auto g = 7_si32;
 enum class si64;  auto h = 8_si64;
 ```
 
+You can play around with it on compiler explorer starting [here](https://godbolt.org/z/dfGnPd)
+
+
 Some extra features:
 * an output operator is defined and will output `ui8` and `si8` as integer values.
 * The UDL operators check for range.
