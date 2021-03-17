@@ -52,7 +52,7 @@ static_assert(42_si8 == from_int_to<si8>(42));
 
 template<typename T, typename WHAT>
 constexpr bool
-isa = std::is_same_v<std::remove_cvref_t<T>,WHAT>;
+isa = std::is_same_v<psssint::plain<T>,WHAT>;
 
 
 template<typename T>

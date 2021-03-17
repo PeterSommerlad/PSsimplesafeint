@@ -18,6 +18,11 @@ enum class ui32: std::uint32_t{ tag_to_prevent_mixing_other_enums };
 enum class ui64: std::uint64_t{ tag_to_prevent_mixing_other_enums };
 
 inline namespace literals {
+
+#ifndef __cpp_consteval
+#define consteval constexpr
+#endif
+
 consteval
 ui8 operator""_ui8(unsigned long long val) {
     if (val <= std::numeric_limits<std::underlying_type_t<ui8>>::max()) {
@@ -104,38 +109,47 @@ si64 operator""_si64(unsigned long long val) {
         throw "integral constant too large"; // trigger compile-time error
     }
 }
+#ifndef __cpp_consteval
+#undef consteval
+#endif
+
 }
 
 
-
-
 template<typename T>
-using plain = std::remove_cvref_t<T>;
+using plain = std::remove_reference_t<std::remove_cv_t<T>>;
 
+
+
+#ifdef __cpp_concepts
 template<typename T>
 concept an_enum = std::is_enum_v<plain<T>>;
-
+#endif
 
 namespace detail_ {
 // from C++23
+#ifdef __cpp_concepts
 template<an_enum T>
-//template<typename T, auto = std::enable_if_t<std::is_enum_v<plain<T>>,void*>{nullptr}>
+#else
+template<typename T, auto = std::enable_if_t<std::is_enum_v<plain<T>>,void*>{nullptr}>
+#endif
 constexpr bool
 is_scoped_enum_v = !std::is_convertible_v<T, std::underlying_type_t<T>>;
 
+#ifdef __cpp_concepts
 template<typename T>
 concept a_scoped_enum = is_scoped_enum_v<T>;
-
+#endif
 
 // detection concept
 
-template<typename T>
+template<typename T, typename = void>
 constexpr bool
 is_safeint_v = false;
 
-template<a_scoped_enum E>
+template<typename E>
 constexpr bool
-is_safeint_v<E> = requires { E{} == E::tag_to_prevent_mixing_other_enums; } ;
+is_safeint_v<E,std::void_t<decltype( E{} == E::tag_to_prevent_mixing_other_enums )>> = std::is_enum_v<E> ;
 
 template<typename E>
 using ULT=std::conditional_t<std::is_enum_v<plain<E>>,std::underlying_type_t<plain<E>>,plain<E>>;
@@ -149,7 +163,7 @@ using promoted_t = // will promote keeping signedness
             , ULT<E>>;
 
 
-template<std::integral T>
+template<typename T>
 constexpr bool
 is_known_integer_v =    std::is_same_v<uint8_t, T> ||
                         std::is_same_v<uint16_t, T> ||
@@ -164,38 +178,66 @@ is_known_integer_v =    std::is_same_v<uint8_t, T> ||
 }
 
 
+#ifdef __cpp_concepts
 template<typename E>
 concept a_safeint = detail_::is_safeint_v<E>;
-
+#endif
 
 namespace detail_{
 
+#ifdef __cpp_concepts
 template<a_safeint E, a_safeint F>
+#else
+template<typename E, typename F>
+#endif
 constexpr bool
-same_sign_v = std::is_unsigned_v<ULT<E>> == std::is_unsigned_v<ULT<F>>;
+same_sign_v = detail_::is_safeint_v<E> && detail_::is_safeint_v<F> && std::is_unsigned_v<ULT<E>> == std::is_unsigned_v<ULT<F>>;
 
 }
 
 
 
+#ifdef __cpp_concepts
 template<typename E, typename F>
 concept same_sign = detail_::same_sign_v<E,F>;
+#endif
 
+#ifdef __cpp_concepts
 template<a_safeint E>
+#else
+template <typename E>
+#endif
 constexpr auto
-to_int(E val) noexcept { // promote keeping signedness
+to_int(E val) noexcept
+#ifndef __cpp_concepts
+-> std::enable_if_t<detail_::is_safeint_v<E>,detail_::promoted_t<E>>
+#endif
+{ // promote keeping signedness
     return static_cast<detail_::promoted_t<E>>(val);
 }
+#ifdef __cpp_concepts
 template<a_safeint E>
+#else
+template <typename E>
+#endif
 constexpr auto
-to_underlying(E val) noexcept { // plain value with all bad properties
+to_underlying(E val) noexcept
+#ifndef __cpp_concepts
+-> std::enable_if_t<detail_::is_safeint_v<E>,std::underlying_type_t<E>>
+#endif
+{ // plain value with all bad properties
     return static_cast<std::underlying_type_t<E>>(val);
 }
 
+#ifdef __cpp_concepts
 template<a_safeint E>
+#else
+template <typename E>
+#endif
 constexpr auto
-to_uint(E val) noexcept { // promote to unsigned for wrap around arithmetic
-    using u_result_t = std::make_unsigned_t<decltype(+std::declval<detail_::promoted_t<E>>())>;
+to_uint(E val) noexcept
+{ // promote to unsigned for wrap around arithmetic
+    using u_result_t = std::make_unsigned_t<detail_::promoted_t<E>>;
     using s_result_t = std::make_signed_t<u_result_t>;
     return static_cast<u_result_t>(static_cast<s_result_t>(to_int(val)));
 }
@@ -203,11 +245,16 @@ to_uint(E val) noexcept { // promote to unsigned for wrap around arithmetic
 
 // deliberately not std::integral, because of bool!
 
+#ifdef __cpp_concepts
 template<typename T>
 concept an_integer = detail_::is_known_integer_v<T>;
+#endif
 
-
+#ifdef __cpp_concepts
 template<an_integer T>
+#else
+template<typename T>
+#endif
 constexpr auto
 from_int(T val) {
     using std::is_same_v;
@@ -224,7 +271,11 @@ from_int(T val) {
                    conditional_t<is_same_v<int64_t,T>, si64, cannot_convert_integer>>>>>>>>;
     return static_cast<result_t>(val);
 }
+#ifdef __cpp_concepts
 template<a_safeint TO, an_integer FROM>
+#else
+template<typename TO, typename FROM>
+#endif
 constexpr TO
 from_int_to(FROM val) {
     using std::is_same_v;
@@ -261,36 +312,62 @@ from_int_to(FROM val) {
 
 // negation for signed types only, two's complement
 
-
+#ifdef __cpp_concepts
 template<a_safeint E>
+#else
+template<typename E,
+std::enable_if_t<
+  detail_::is_safeint_v<E>
+  && std::is_signed_v<detail_::ULT<E>>
+,bool> = true>
+#endif
 constexpr E
 operator-(E l) noexcept
-requires std::is_signed_v<detail_::ULT<E>> {
+#ifdef __cpp_concepts
+requires std::is_signed_v<detail_::ULT<E>>
+#endif
+{
     return static_cast<E>(1u + ~to_uint(l));
 }
 
 // increment/decrement
 
+#ifdef __cpp_concepts
 template<a_safeint E>
+#else
+template<typename E, std::enable_if_t<detail_::is_safeint_v<E>,bool> = true>
+#endif
 constexpr E&
 operator++(E& l) noexcept {
     return l = static_cast<E>(1u + to_uint(l));
 }
 
+#ifdef __cpp_concepts
 template<a_safeint E>
+#else
+template<typename E, std::enable_if_t<detail_::is_safeint_v<E>,bool> = true>
+#endif
 constexpr E
 operator++(E& l, int) noexcept {
     auto result=l;
     ++l;
     return result;
 }
+#ifdef __cpp_concepts
 template<a_safeint E>
+#else
+template<typename E, std::enable_if_t<detail_::is_safeint_v<E>,bool> = true>
+#endif
 constexpr E&
 operator--(E& l) noexcept {
     return l = static_cast<E>(to_uint(l) - 1u);
 }
 
+#ifdef __cpp_concepts
 template<a_safeint E>
+#else
+template<typename E, std::enable_if_t<detail_::is_safeint_v<E>,bool> = true>
+#endif
 constexpr E
 operator--(E& l, int) noexcept {
     auto result=l;
@@ -304,10 +381,22 @@ operator--(E& l, int) noexcept {
 
 
 
+#ifdef __cpp_concepts
 template<a_safeint E, a_safeint F>
+#else
+template<typename E, typename F,
+std::enable_if_t<
+  detail_::is_safeint_v<E>
+  && detail_::is_safeint_v<F>
+  && detail_::same_sign_v<E,F>
+,bool> = true>
+#endif
 constexpr auto
 operator+(E l, F r) noexcept
-requires same_sign<E,F> {
+#if __cpp_concepts
+requires same_sign<E,F>
+#endif
+{
     using result_t=std::conditional_t<sizeof(E)>=sizeof(F),E,F>;
     return static_cast<result_t>(
             static_cast<detail_::ULT<result_t>>(
@@ -319,19 +408,43 @@ requires same_sign<E,F> {
 }
 
 
+#ifdef __cpp_concepts
 template<a_safeint E, a_safeint F>
+#else
+template<typename E, typename F,
+std::enable_if_t<
+  detail_::is_safeint_v<E>
+  && detail_::is_safeint_v<F>
+  && detail_::same_sign_v<E,F>
+,bool> = true>
+#endif
 constexpr auto&
 operator+=(E &l, F r) noexcept
-requires same_sign<E,F> {
+#ifdef __cpp_concepts
+requires same_sign<E,F>
+#endif
+{
     static_assert(sizeof(E) >= sizeof(F),"adding too large integer type");
     l = static_cast<E>(l+r);
     return l;
 }
 
+#ifdef __cpp_concepts
 template<a_safeint E, a_safeint F>
+#else
+template<typename E, typename F,
+std::enable_if_t<
+  detail_::is_safeint_v<E>
+  && detail_::is_safeint_v<F>
+  && detail_::same_sign_v<E,F>
+,bool> = true>
+#endif
 constexpr auto
 operator-(E l, F r) noexcept
-requires same_sign<E,F> {
+#ifdef __cpp_concepts
+requires same_sign<E,F>
+#endif
+{
     using result_t=std::conditional_t<sizeof(E)>=sizeof(F),E,F>;
     return static_cast<result_t>(
             static_cast<detail_::ULT<result_t>>(
@@ -341,20 +454,44 @@ requires same_sign<E,F> {
             )
     );
 }
+#ifdef __cpp_concepts
 template<a_safeint E, a_safeint F>
+#else
+template<typename E, typename F,
+std::enable_if_t<
+  detail_::is_safeint_v<E>
+  && detail_::is_safeint_v<F>
+  && detail_::same_sign_v<E,F>
+,bool> = true>
+#endif
 constexpr auto&
 operator-=(E &l, F r) noexcept
-requires same_sign<E,F> {
+#ifdef __cpp_concepts
+requires same_sign<E,F>
+#endif
+{
     static_assert(sizeof(E) >= sizeof(F),"subtracting too large integer type");
     l = static_cast<E>(l-r);
     return l;
 }
 
 
+#ifdef __cpp_concepts
 template<a_safeint E, a_safeint F>
+#else
+template<typename E, typename F,
+std::enable_if_t<
+  detail_::is_safeint_v<E>
+  && detail_::is_safeint_v<F>
+  && detail_::same_sign_v<E,F>
+,bool> = true>
+#endif
 constexpr auto
 operator*(E l, F r) noexcept
-requires same_sign<E,F> {
+#ifdef __cpp_concepts
+requires same_sign<E,F>
+#endif
+{
     using result_t=std::conditional_t<sizeof(E)>=sizeof(F),E,F>;
     return static_cast<result_t>(
             static_cast<detail_::ULT<result_t>>(
@@ -364,18 +501,42 @@ requires same_sign<E,F> {
             )
     );
 }
+#ifdef __cpp_concepts
 template<a_safeint E, a_safeint F>
+#else
+template<typename E, typename F,
+std::enable_if_t<
+  detail_::is_safeint_v<E>
+  && detail_::is_safeint_v<F>
+  && detail_::same_sign_v<E,F>
+,bool> = true>
+#endif
 constexpr auto&
 operator*=(E &l, F r) noexcept
-requires same_sign<E,F> {
+#ifdef __cpp_concepts
+requires same_sign<E,F>
+#endif
+{
     static_assert(sizeof(E) >= sizeof(F),"multiplying too large integer type");
     l = static_cast<E>(l*r);
     return l;
 }
+#ifdef __cpp_concepts
 template<a_safeint E, a_safeint F>
+#else
+template<typename E, typename F,
+std::enable_if_t<
+  detail_::is_safeint_v<E>
+  && detail_::is_safeint_v<F>
+  && detail_::same_sign_v<E,F>
+,bool> = true>
+#endif
 constexpr auto
 operator/(E l, F r) noexcept
-requires same_sign<E,F> {
+#ifdef __cpp_concepts
+requires same_sign<E,F>
+#endif
+{
     using result_t=std::conditional_t<sizeof(E)>=sizeof(F),E,F>;
     assert(r != F{});
     return static_cast<result_t>(
@@ -386,19 +547,44 @@ requires same_sign<E,F> {
             )
     );
 }
+#ifdef __cpp_concepts
 template<a_safeint E, a_safeint F>
+#else
+template<typename E, typename F,
+std::enable_if_t<
+  detail_::is_safeint_v<E>
+  && detail_::is_safeint_v<F>
+  && detail_::same_sign_v<E,F>
+,bool> = true>
+#endif
 constexpr auto&
 operator/=(E &l, F r) noexcept
-requires same_sign<E,F> {
+#ifdef __cpp_concepts
+requires same_sign<E,F>
+#endif
+{
     static_assert(sizeof(E) >= sizeof(F),"dividing by too large integer type");
     assert(r != F{} && "division by zero");
     l = static_cast<E>(l/r);
     return l;
 }
+#ifdef __cpp_concepts
 template<a_safeint E, a_safeint F>
+#else
+template<typename E, typename F,
+std::enable_if_t<
+  detail_::is_safeint_v<E>
+  && detail_::is_safeint_v<F>
+  && detail_::same_sign_v<E,F>
+  && std::is_unsigned_v<detail_::ULT<E>>
+,bool> = true>
+#endif
 constexpr auto
 operator%(E l, F r) noexcept
-requires same_sign<E,F> && std::is_unsigned_v<detail_::ULT<E>> {
+#ifdef __cpp_concepts
+requires same_sign<E,F> && std::is_unsigned_v<detail_::ULT<E>>
+#endif
+{
     using result_t=std::conditional_t<sizeof(E)>=sizeof(F),E,F>;
     assert(r != F{});
     return static_cast<result_t>(
@@ -409,10 +595,23 @@ requires same_sign<E,F> && std::is_unsigned_v<detail_::ULT<E>> {
             )
     );
 }
+#ifdef __cpp_concepts
 template<a_safeint E, a_safeint F>
+#else
+template<typename E, typename F,
+std::enable_if_t<
+  detail_::is_safeint_v<E>
+  && detail_::is_safeint_v<F>
+  && detail_::same_sign_v<E,F>
+  && std::is_unsigned_v<detail_::ULT<E>>
+,bool> = true>
+#endif
 constexpr auto&
 operator%=(E &l, F r) noexcept
-requires same_sign<E,F> && std::is_unsigned_v<detail_::ULT<E>> {
+#ifdef __cpp_concepts
+requires same_sign<E,F> && std::is_unsigned_v<detail_::ULT<E>>
+#endif
+{
     static_assert(sizeof(E) >= sizeof(F),"dividing by too large integer type");
     assert(r != F{} && "division by zero");
     l = static_cast<E>(l%r);
@@ -421,87 +620,228 @@ requires same_sign<E,F> && std::is_unsigned_v<detail_::ULT<E>> {
 
 // bitwise operators
 
+#ifdef __cpp_concepts
 template<a_safeint E, a_safeint F>
+#else
+template<typename E, typename F,
+std::enable_if_t<
+  detail_::is_safeint_v<E>
+  && detail_::is_safeint_v<F>
+  && std::is_unsigned_v<detail_::ULT<E>>
+  && std::is_unsigned_v<detail_::ULT<F>>
+  ,bool> = true>
+#endif
 constexpr auto
 operator&(E l, F r) noexcept
-requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>> {
+#ifdef __cpp_concepts
+requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
+#endif
+{
     using result_t=std::conditional_t<sizeof(E)>=sizeof(F),E,F>;
     return static_cast<result_t>(to_int(l)&to_int(r));
 }
+#ifdef __cpp_concepts
 template<a_safeint E, a_safeint F>
+#else
+template<typename E, typename F,
+std::enable_if_t<
+  detail_::is_safeint_v<E>
+  && detail_::is_safeint_v<F>
+  && std::is_unsigned_v<detail_::ULT<E>>
+  && std::is_unsigned_v<detail_::ULT<F>>
+  ,bool> = true>
+#endif
 constexpr auto&
 operator&=(E &l, F r) noexcept
-requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>> {
+#ifdef __cpp_concepts
+requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
+#endif
+{
     static_assert(sizeof(E) == sizeof(F),"bitand by different sized integer type");
     l = static_cast<E>(l&r);
     return l;
 }
 
+#ifdef __cpp_concepts
 template<a_safeint E, a_safeint F>
+#else
+template<typename E, typename F,
+std::enable_if_t<
+  detail_::is_safeint_v<E>
+  && detail_::is_safeint_v<F>
+  && std::is_unsigned_v<detail_::ULT<E>>
+  && std::is_unsigned_v<detail_::ULT<F>>
+  ,bool> = true>
+#endif
 constexpr auto
 operator|(E l, F r) noexcept
-requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>> {
+#ifdef __cpp_concepts
+requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
+#endif
+{
     using result_t=std::conditional_t<sizeof(E)>=sizeof(F),E,F>;
     return static_cast<result_t>(to_int(l)|to_int(r));
 }
+#ifdef __cpp_concepts
 template<a_safeint E, a_safeint F>
+#else
+template<typename E, typename F,
+std::enable_if_t<
+  detail_::is_safeint_v<E>
+  && detail_::is_safeint_v<F>
+  && std::is_unsigned_v<detail_::ULT<E>>
+  && std::is_unsigned_v<detail_::ULT<F>>
+  ,bool> = true>
+#endif
 constexpr auto&
 operator|=(E &l, F r) noexcept
-requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>> {
+#ifdef __cpp_concepts
+requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
+#endif
+{
     static_assert(sizeof(E) == sizeof(F),"bitor by different sized integer type");
     l = static_cast<E>(l|r);
     return l;
 }
 
+#ifdef __cpp_concepts
 template<a_safeint E, a_safeint F>
+#else
+template<typename E, typename F,
+std::enable_if_t<
+  detail_::is_safeint_v<E>
+  && detail_::is_safeint_v<F>
+  && std::is_unsigned_v<detail_::ULT<E>>
+  && std::is_unsigned_v<detail_::ULT<F>>
+  ,bool> = true>
+#endif
 constexpr auto
 operator^(E l, F r) noexcept
-requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>> {
+#ifdef __cpp_concepts
+requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
+#endif
+{
     using result_t=std::conditional_t<sizeof(E)>=sizeof(F),E,F>;
     return static_cast<result_t>(to_int(l)^to_int(r));
 }
+#ifdef __cpp_concepts
 template<a_safeint E, a_safeint F>
+#else
+template<typename E, typename F,
+std::enable_if_t<
+  detail_::is_safeint_v<E>
+  && detail_::is_safeint_v<F>
+  && std::is_unsigned_v<detail_::ULT<E>>
+  && std::is_unsigned_v<detail_::ULT<F>>
+  ,bool> = true>
+#endif
 constexpr auto&
 operator^=(E &l, F r) noexcept
-requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>> {
+#ifdef __cpp_concepts
+requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
+#endif
+{
     static_assert(sizeof(E) == sizeof(F),"xor by different sized integer type");
     l = static_cast<E>(l^r);
     return l;
 }
 
+#ifdef __cpp_concepts
 template<a_safeint E>
+#else
+template<typename E,
+std::enable_if_t<
+  detail_::is_safeint_v<E>
+  && std::is_unsigned_v<detail_::ULT<E>>
+,bool> = true>
+#endif
 constexpr E
 operator~(E l) noexcept
-requires std::is_unsigned_v<detail_::ULT<E>> {
+#ifdef __cpp_concepts
+requires std::is_unsigned_v<detail_::ULT<E>>
+#endif
+{
     return static_cast<E>(~to_int(l));
 }
 
 
+#ifdef __cpp_concepts
 template<a_safeint E, a_safeint F>
+#else
+template<typename E, typename F,
+std::enable_if_t<
+  detail_::is_safeint_v<E>
+  && detail_::is_safeint_v<F>
+  && std::is_unsigned_v<detail_::ULT<E>>
+  && std::is_unsigned_v<detail_::ULT<F>>
+  ,bool> = true>
+#endif
 constexpr E
 operator<<(E l, F r) noexcept
-requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>> {
+#ifdef __cpp_concepts
+requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
+#endif
+{
     assert(static_cast<size_t>(to_int(r)) < sizeof(E)*CHAR_BIT && "trying to shift by too many bits");
     return static_cast<E>(to_int(l)<<to_int(r));
 }
+#ifdef __cpp_concepts
 template<a_safeint E, a_safeint F>
+#else
+template<typename E, typename F,
+std::enable_if_t<
+  detail_::is_safeint_v<E>
+  && detail_::is_safeint_v<F>
+  && std::is_unsigned_v<detail_::ULT<E>>
+  && std::is_unsigned_v<detail_::ULT<F>>
+  ,bool> = true>
+#endif
 constexpr auto&
 operator<<=(E &l, F r) noexcept
-requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>> {
+#ifdef __cpp_concepts
+requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
+#endif
+{
     l = static_cast<E>(l<<r);
     return l;
 }
+#ifdef __cpp_concepts
 template<a_safeint E, a_safeint F>
+#else
+template<typename E, typename F,
+std::enable_if_t<
+  detail_::is_safeint_v<E>
+  && detail_::is_safeint_v<F>
+  && std::is_unsigned_v<detail_::ULT<E>>
+  && std::is_unsigned_v<detail_::ULT<F>>
+  ,bool> = true>
+#endif
 constexpr E
 operator>>(E l, F r) noexcept
-requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>> {
+#ifdef __cpp_concepts
+requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
+#endif
+{
     assert(static_cast<size_t>(to_int(r)) < sizeof(E)*CHAR_BIT && "trying to shift by too many bits");
     return static_cast<E>(to_int(l)>>to_int(r));
 }
+#ifdef __cpp_concepts
 template<a_safeint E, a_safeint F>
+#else
+template<typename E, typename F,
+std::enable_if_t<
+  detail_::is_safeint_v<E>
+  && detail_::is_safeint_v<F>
+  && std::is_unsigned_v<detail_::ULT<E>>
+  && std::is_unsigned_v<detail_::ULT<F>>
+  ,bool> = true>
+#endif
 constexpr auto&
 operator>>=(E &l, F r) noexcept
-requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>> {
+#ifdef __cpp_concepts
+requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
+#endif
+{
     l = static_cast<E>(l>>r);
     return l;
 }
@@ -513,14 +853,20 @@ requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<
 //    out << +to_int(value); // + triggers promotion and prevents outputting char
 //    return out;
 //}
-
-std::ostream& operator<<(std::ostream &out, a_safeint auto value){
-    out << +to_int(value); // + triggers promotion and prevents outputting char
+#ifdef __cpp_concepts
+template<a_safeint E>
+#else
+template<typename E,
+std::enable_if_t<
+  detail_::is_safeint_v<E>
+,bool> = true>
+#endif
+std::ostream& operator<<(std::ostream &out, E value){
+    out << to_int(value); // + triggers promotion and prevents outputting char
     return out;
 }
 
 }
-
 
 
 #endif /* SRC_PSSSAFEINT_ */
