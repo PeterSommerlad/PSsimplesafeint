@@ -231,6 +231,36 @@ void ui16canbepostdecremented(){
     ASSERT_EQUAL(0x100_ui16,l);
 }
 
+void ui16canbecompared(){
+    auto l = 0x00ff_ui16;
+    auto s = 0x000f_ui16;
+
+	ASSERTM("check comparison", l != s && s < l && l >= s && !(l < s) && ! (l <= s));
+}
+
+void ui16canNotbecomparedwithui8() {
+    auto l = 0x00ff_ui16;
+    auto s = 0x000f_ui8;
+
+
+//    ASSERTM("check comparison", l != s && s < l && l >= s && !(l < s) && ! (l <= s));
+
+    auto ss = s + 0_ui16;
+    ASSERTM("check comparison", l != ss && ss < l && l >= ss && !(l < ss) && ! (l <= ss));
+}
+
+void ui32CanNotbeComparedwithlong(){
+    auto l = 0x00ff_ui32;
+    auto s = std::uint32_t{0x000fU};
+
+
+//    ASSERTM("check comparison", l != s && s < l && l >= s && !(l < s) && ! (l <= s));
+
+    auto ss = psssint::from_int(s);
+    ASSERTM("check comparison", l != ss && ss < l && l >= ss && !(l < ss) && ! (l <= ss));
+
+}
+
 
 // signed test to check if result is correct (overflow wraps)
 
@@ -279,7 +309,6 @@ void ui8OutputAsInteger(){
 }
 
 
-
 void checkedFromInt(){
     using namespace psssint;
     ASSERT_THROWS(from_int_to<ui8>(2400u), char const *);
@@ -322,7 +351,6 @@ bool runAllTests(int argc, char const *argv[]) {
     s.push_back(CUTE(si8subtractionwraps));
     s.push_back(CUTE(si8multiplication));
     s.push_back(CUTE(si8division));
-
     s.push_back(CUTE(ui16canbepreincremented));
     s.push_back(CUTE(ui16canbepostincremented));
     s.push_back(CUTE(ui16canbepredecremented));
@@ -330,6 +358,9 @@ bool runAllTests(int argc, char const *argv[]) {
 	s.push_back(CUTE(checkedFromInt));
 	s.push_back(CUTE(si8OutputAsInteger));
 	s.push_back(CUTE(ui8OutputAsInteger));
+	s.push_back(CUTE(ui16canbecompared));
+	s.push_back(CUTE(ui16canNotbecomparedwithui8));
+	s.push_back(CUTE(ui32CanNotbeComparedwithlong));
 	cute::xml_file_opener xmlfile(argc, argv);
     cute::xml_listener<cute::ide_listener<>> lis(xmlfile.out);
     auto runner = cute::makeRunner(lis, argc, argv);
