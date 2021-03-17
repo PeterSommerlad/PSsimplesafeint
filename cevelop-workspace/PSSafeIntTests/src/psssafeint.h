@@ -195,7 +195,7 @@ to_underlying(E val) noexcept { // plain value with all bad properties
 template<a_safeint E>
 constexpr auto
 to_uint(E val) noexcept { // promote to unsigned for wrap around arithmetic
-    using u_result_t = std::make_unsigned_t<decltype(+std::declval<detail_::promoted_t<E>>())>;
+    using u_result_t = std::make_unsigned_t<detail_::promoted_t<E>>;
     using s_result_t = std::make_signed_t<u_result_t>;
     return static_cast<u_result_t>(static_cast<s_result_t>(to_int(val)));
 }
@@ -507,15 +507,8 @@ requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<
 }
 
 
-
-//template<a_safeint E>
-//std::ostream& operator<<(std::ostream &out, E value){
-//    out << +to_int(value); // + triggers promotion and prevents outputting char
-//    return out;
-//}
-
 std::ostream& operator<<(std::ostream &out, a_safeint auto value){
-    out << +to_int(value); // + triggers promotion and prevents outputting char
+    out << to_int(value);
     return out;
 }
 

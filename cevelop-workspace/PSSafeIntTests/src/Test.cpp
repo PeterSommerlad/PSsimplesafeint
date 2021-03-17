@@ -266,6 +266,19 @@ void si8division(){
     ASSERT_EQUAL(3_si8 , 120_si8 / 40_si8);
 }
 
+void si8OutputAsInteger(){
+    std::ostringstream out{};
+    out << 42_si8;
+    ASSERT_EQUAL("42",out.str());
+}
+
+void ui8OutputAsInteger(){
+    std::ostringstream out{};
+    out << 42_ui8;
+    ASSERT_EQUAL("42",out.str());
+}
+
+
 
 void checkedFromInt(){
     using namespace psssint;
@@ -314,7 +327,10 @@ bool runAllTests(int argc, char const *argv[]) {
     s.push_back(CUTE(ui16canbepostincremented));
     s.push_back(CUTE(ui16canbepredecremented));
     s.push_back(CUTE(ui16canbepostdecremented));
-	s.push_back(CUTE(checkedFromInt));	cute::xml_file_opener xmlfile(argc, argv);
+	s.push_back(CUTE(checkedFromInt));
+	s.push_back(CUTE(si8OutputAsInteger));
+	s.push_back(CUTE(ui8OutputAsInteger));
+	cute::xml_file_opener xmlfile(argc, argv);
     cute::xml_listener<cute::ide_listener<>> lis(xmlfile.out);
     auto runner = cute::makeRunner(lis, argc, argv);
     bool success = runner(s, "AllTests");
