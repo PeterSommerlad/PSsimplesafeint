@@ -165,17 +165,6 @@ using promoted_t = // will promote keeping signedness
             , ULT<E>>;
 
 
-template<typename T>
-constexpr bool
-is_known_integer_v =    std::is_same_v<std::uint8_t, T> ||
-                        std::is_same_v<std::uint16_t, T> ||
-                        std::is_same_v<std::uint32_t, T> ||
-                        std::is_same_v<std::uint64_t, T> ||
-                        std::is_same_v<std::int8_t, T> ||
-                        std::is_same_v<std::int16_t, T> ||
-                        std::is_same_v<std::int32_t, T> ||
-                        std::is_same_v<std::int64_t, T>;
-
 
 }
 
@@ -193,7 +182,44 @@ template<a_safeint E, a_safeint F>
 template<typename E, typename F>
 #endif
 constexpr bool
-same_sign_v = detail_::is_safeint_v<E> && detail_::is_safeint_v<F> && std::is_unsigned_v<ULT<E>> == std::is_unsigned_v<ULT<F>>;
+same_signedness_v = detail_::is_safeint_v<E> && detail_::is_safeint_v<F> && std::is_unsigned_v<ULT<E>> == std::is_unsigned_v<ULT<F>>;
+
+template<typename CHAR>
+constexpr bool
+is_chartype_v =    std::is_same_v<char,CHAR>
+                || std::is_same_v<wchar_t,CHAR>
+#ifdef __cpp_char8_t
+                || std::is_same_v<char8_t,CHAR>
+#endif
+                || std::is_same_v<char16_t,CHAR>
+                || std::is_same_v<char32_t,CHAR> ;
+
+
+
+template<typename INT, typename T>
+constexpr bool
+is_compatible_integer_v = std::is_same_v<T,INT> ||
+   (   std::is_integral_v<T>
+   && !std::is_same_v<bool,T>
+   && !is_chartype_v<T>
+   && (std::is_unsigned_v<INT> == std::is_unsigned_v<T>)
+   && std::numeric_limits<T>::max() == std::numeric_limits<INT>::max() );
+
+template<typename INT, typename T>
+constexpr bool
+is_similar_v=is_compatible_integer_v<INT,T>;
+
+template<typename T>
+constexpr bool
+is_known_integer_v =    is_similar_v<std::uint8_t, T> ||
+                        is_similar_v<std::uint16_t, T> ||
+                        is_similar_v<std::uint32_t, T> ||
+                        is_similar_v<std::uint64_t, T> ||
+                        is_similar_v<std::int8_t, T> ||
+                        is_similar_v<std::int16_t, T> ||
+                        is_similar_v<std::int32_t, T> ||
+                        is_similar_v<std::int64_t, T>;
+
 
 }
 
@@ -201,7 +227,7 @@ same_sign_v = detail_::is_safeint_v<E> && detail_::is_safeint_v<F> && std::is_un
 
 #ifdef __cpp_concepts
 template<typename E, typename F>
-concept same_sign = detail_::same_sign_v<E,F>;
+concept same_signedness = detail_::same_signedness_v<E,F>;
 #endif
 
 #ifdef __cpp_concepts
@@ -255,33 +281,40 @@ concept an_integer = detail_::is_known_integer_v<T>;
 #ifdef __cpp_concepts
 template<an_integer T>
 #else
-template<typename T>
+template<typename T, std::enable_if_t<detail_::is_known_integer_v<T>,bool> = false >
 #endif
 constexpr auto
 from_int(T val) {
-    using std::is_same_v;
+    using detail_::is_similar_v;
     using std::conditional_t;
     struct cannot_convert_integer{};
     using result_t =
-            conditional_t<is_same_v<std::uint8_t,T>, ui8,
-             conditional_t<is_same_v<std::uint16_t,T>, ui16,
-              conditional_t<is_same_v<std::uint32_t,T>, ui32,
-               conditional_t<is_same_v<std::uint64_t,T>, ui64,
-                conditional_t<is_same_v<std::int8_t,T>, si8,
-                 conditional_t<is_same_v<std::int16_t,T>, si16,
-                  conditional_t<is_same_v<std::int32_t,T>, si32,
-                   conditional_t<is_same_v<std::int64_t,T>, si64, cannot_convert_integer>>>>>>>>;
+            conditional_t<is_similar_v<std::uint8_t,T>, ui8,
+             conditional_t<is_similar_v<std::uint16_t,T>, ui16,
+              conditional_t<is_similar_v<std::uint32_t,T>, ui32,
+               conditional_t<is_similar_v<std::uint64_t,T>, ui64,
+                conditional_t<is_similar_v<std::int8_t,T>, si8,
+                 conditional_t<is_similar_v<std::int16_t,T>, si16,
+                  conditional_t<is_similar_v<std::int32_t,T>, si32,
+                   conditional_t<is_similar_v<std::int64_t,T>, si64, cannot_convert_integer>>>>>>>>;
     return static_cast<result_t>(val);
 }
 #ifdef __cpp_concepts
 template<a_safeint TO, an_integer FROM>
 #else
-template<typename TO, typename FROM>
+template<typename TO, typename FROM,
+std::enable_if_t<detail_::is_safeint_v<TO>,bool> = false
+>
 #endif
-constexpr TO
-from_int_to(FROM val) {
-    using std::is_same_v;
-    using std::conditional_t;
+constexpr
+auto
+from_int_to(FROM val)
+#ifdef __cpp_concepts
+-> TO
+#else
+-> std::enable_if_t<detail_::is_known_integer_v<FROM>,TO>
+#endif
+{
     using result_t = TO;
     using ultr = std::underlying_type_t<result_t>;
     if constexpr(std::is_unsigned_v<ultr>){
@@ -390,13 +423,13 @@ template<typename E, typename F,
 std::enable_if_t<
   detail_::is_safeint_v<E>
   && detail_::is_safeint_v<F>
-  && detail_::same_sign_v<E,F>
+  && detail_::same_signedness_v<E,F>
 ,bool> = true>
 #endif
 constexpr auto
 operator+(E l, F r) noexcept
 #if __cpp_concepts
-requires same_sign<E,F>
+requires same_signedness<E,F>
 #endif
 {
     using result_t=std::conditional_t<sizeof(E)>=sizeof(F),E,F>;
@@ -417,13 +450,13 @@ template<typename E, typename F,
 std::enable_if_t<
   detail_::is_safeint_v<E>
   && detail_::is_safeint_v<F>
-  && detail_::same_sign_v<E,F>
+  && detail_::same_signedness_v<E,F>
 ,bool> = true>
 #endif
 constexpr auto&
 operator+=(E &l, F r) noexcept
 #ifdef __cpp_concepts
-requires same_sign<E,F>
+requires same_signedness<E,F>
 #endif
 {
     static_assert(sizeof(E) >= sizeof(F),"adding too large integer type");
@@ -438,13 +471,13 @@ template<typename E, typename F,
 std::enable_if_t<
   detail_::is_safeint_v<E>
   && detail_::is_safeint_v<F>
-  && detail_::same_sign_v<E,F>
+  && detail_::same_signedness_v<E,F>
 ,bool> = true>
 #endif
 constexpr auto
 operator-(E l, F r) noexcept
 #ifdef __cpp_concepts
-requires same_sign<E,F>
+requires same_signedness<E,F>
 #endif
 {
     using result_t=std::conditional_t<sizeof(E)>=sizeof(F),E,F>;
@@ -463,13 +496,13 @@ template<typename E, typename F,
 std::enable_if_t<
   detail_::is_safeint_v<E>
   && detail_::is_safeint_v<F>
-  && detail_::same_sign_v<E,F>
+  && detail_::same_signedness_v<E,F>
 ,bool> = true>
 #endif
 constexpr auto&
 operator-=(E &l, F r) noexcept
 #ifdef __cpp_concepts
-requires same_sign<E,F>
+requires same_signedness<E,F>
 #endif
 {
     static_assert(sizeof(E) >= sizeof(F),"subtracting too large integer type");
@@ -485,13 +518,13 @@ template<typename E, typename F,
 std::enable_if_t<
   detail_::is_safeint_v<E>
   && detail_::is_safeint_v<F>
-  && detail_::same_sign_v<E,F>
+  && detail_::same_signedness_v<E,F>
 ,bool> = true>
 #endif
 constexpr auto
 operator*(E l, F r) noexcept
 #ifdef __cpp_concepts
-requires same_sign<E,F>
+requires same_signedness<E,F>
 #endif
 {
     using result_t=std::conditional_t<sizeof(E)>=sizeof(F),E,F>;
@@ -510,13 +543,13 @@ template<typename E, typename F,
 std::enable_if_t<
   detail_::is_safeint_v<E>
   && detail_::is_safeint_v<F>
-  && detail_::same_sign_v<E,F>
+  && detail_::same_signedness_v<E,F>
 ,bool> = true>
 #endif
 constexpr auto&
 operator*=(E &l, F r) noexcept
 #ifdef __cpp_concepts
-requires same_sign<E,F>
+requires same_signedness<E,F>
 #endif
 {
     static_assert(sizeof(E) >= sizeof(F),"multiplying too large integer type");
@@ -530,13 +563,13 @@ template<typename E, typename F,
 std::enable_if_t<
   detail_::is_safeint_v<E>
   && detail_::is_safeint_v<F>
-  && detail_::same_sign_v<E,F>
+  && detail_::same_signedness_v<E,F>
 ,bool> = true>
 #endif
 constexpr auto
 operator/(E l, F r) noexcept
 #ifdef __cpp_concepts
-requires same_sign<E,F>
+requires same_signedness<E,F>
 #endif
 {
     using result_t=std::conditional_t<sizeof(E)>=sizeof(F),E,F>;
@@ -556,13 +589,13 @@ template<typename E, typename F,
 std::enable_if_t<
   detail_::is_safeint_v<E>
   && detail_::is_safeint_v<F>
-  && detail_::same_sign_v<E,F>
+  && detail_::same_signedness_v<E,F>
 ,bool> = true>
 #endif
 constexpr auto&
 operator/=(E &l, F r) noexcept
 #ifdef __cpp_concepts
-requires same_sign<E,F>
+requires same_signedness<E,F>
 #endif
 {
     static_assert(sizeof(E) >= sizeof(F),"dividing by too large integer type");
@@ -577,14 +610,14 @@ template<typename E, typename F,
 std::enable_if_t<
   detail_::is_safeint_v<E>
   && detail_::is_safeint_v<F>
-  && detail_::same_sign_v<E,F>
+  && detail_::same_signedness_v<E,F>
   && std::is_unsigned_v<detail_::ULT<E>>
 ,bool> = true>
 #endif
 constexpr auto
 operator%(E l, F r) noexcept
 #ifdef __cpp_concepts
-requires same_sign<E,F> && std::is_unsigned_v<detail_::ULT<E>>
+requires same_signedness<E,F> && std::is_unsigned_v<detail_::ULT<E>>
 #endif
 {
     using result_t=std::conditional_t<sizeof(E)>=sizeof(F),E,F>;
@@ -604,14 +637,14 @@ template<typename E, typename F,
 std::enable_if_t<
   detail_::is_safeint_v<E>
   && detail_::is_safeint_v<F>
-  && detail_::same_sign_v<E,F>
+  && detail_::same_signedness_v<E,F>
   && std::is_unsigned_v<detail_::ULT<E>>
 ,bool> = true>
 #endif
 constexpr auto&
 operator%=(E &l, F r) noexcept
 #ifdef __cpp_concepts
-requires same_sign<E,F> && std::is_unsigned_v<detail_::ULT<E>>
+requires same_signedness<E,F> && std::is_unsigned_v<detail_::ULT<E>>
 #endif
 {
     static_assert(sizeof(E) >= sizeof(F),"dividing by too large integer type");

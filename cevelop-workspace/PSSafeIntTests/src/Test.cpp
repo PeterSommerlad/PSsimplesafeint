@@ -11,7 +11,56 @@
 using namespace psssint::literals;
 
 namespace _testing {
+
+template<typename FROM, typename=void>
+constexpr bool
+from_int_compiles=false;
+
+template<typename FROM>
+constexpr bool
+from_int_compiles<FROM,std::void_t<decltype(psssint::from_int(FROM{}))>> = true;
+
+static_assert(from_int_compiles<unsigned char>);
+static_assert(from_int_compiles<signed char>);
+static_assert(from_int_compiles<short>);
+static_assert(from_int_compiles<unsigned short>);
+static_assert(from_int_compiles<int>);
+static_assert(from_int_compiles<unsigned>);
+static_assert(from_int_compiles<long>);
+static_assert(from_int_compiles<unsigned long>);
+static_assert(from_int_compiles<long long>);
+static_assert(from_int_compiles<unsigned long long>);
+static_assert(from_int_compiles<std::uint8_t>);
+static_assert(from_int_compiles<std::uint16_t>);
+static_assert(from_int_compiles<std::uint32_t>);
+static_assert(from_int_compiles<std::uint64_t>);
+static_assert(from_int_compiles<std::int8_t>);
+static_assert(from_int_compiles<std::int16_t>);
+static_assert(from_int_compiles<std::int32_t>);
+static_assert(from_int_compiles<std::int64_t>);
+
+
+static_assert(! from_int_compiles<bool>);
+static_assert(! from_int_compiles<char>);
+#ifdef __cpp_char8_t
+static_assert(! from_int_compiles<char8_t>);
+#endif
+static_assert(! from_int_compiles<wchar_t>);
+static_assert(! from_int_compiles<char16_t>);
+static_assert(! from_int_compiles<char32_t>);
+
 using namespace psssint;
+
+static_assert(sizeof(long) == sizeof(long long)); // on my mac...
+static_assert(42_si64 == from_int(42L));
+static_assert(42_si64 == from_int(42LL));
+static_assert(42_si32 == from_int(42));
+static_assert(42_ui64 == from_int(42uL));
+static_assert(42_ui64 == from_int(42uLL));
+static_assert(42_ui32 == from_int(42u));
+
+
+
 static_assert(detail_::is_safeint_v<ui8>);
 static_assert(detail_::is_safeint_v<ui16>);
 static_assert(detail_::is_safeint_v<ui32>);
@@ -48,6 +97,9 @@ static_assert(std::is_same_v<uint8_t,decltype(to_underlying(42_ui8))>);
 static_assert(1_ui8 == from_int(uint8_t(1)));
 static_assert(42_si8 == from_int_to<si8>(42));
 //static_assert(32_ui8 == from_int(' ')); // does not compile
+//static_assert(32_ui8 == from_int(u' ')); // does not compile
+//static_assert(32_ui8 == from_int(U' ')); // does not compile
+//static_assert(32_ui8 == from_int(L' ')); // does not compile
 //static_assert(1_ui8 == from_int_to<ui8>(true)); // does not compile
 
 template<typename T, typename WHAT>
@@ -312,7 +364,6 @@ void checkedFromInt(){
     using namespace psssint;
     ASSERT_THROWS(from_int_to<ui8>(2400u), char const *);
 }
-
 
 
 
