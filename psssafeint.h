@@ -196,30 +196,29 @@ is_chartype_v =    std::is_same_v<char,CHAR>
 
 
 
-template<typename INT, typename T>
+template<typename INT, typename TESTED>
 constexpr bool
-is_compatible_integer_v = std::is_same_v<T,INT> ||
-   (   std::is_integral_v<T>
-   && !std::is_same_v<bool,T>
-   && !is_chartype_v<T>
-   && (std::is_unsigned_v<INT> == std::is_unsigned_v<T>)
-   && std::numeric_limits<T>::max() == std::numeric_limits<INT>::max() );
+is_compatible_integer_v = std::is_same_v<TESTED,INT> ||
+   (   std::is_integral_v<TESTED>
+   && !std::is_same_v<bool,TESTED>
+   && !is_chartype_v<TESTED>
+   && (std::is_unsigned_v<INT> == std::is_unsigned_v<TESTED>)
+   && std::numeric_limits<TESTED>::max() == std::numeric_limits<INT>::max() );
 
-template<typename INT, typename T>
+template<typename INT, typename TESTED>
 constexpr bool
-is_similar_v=is_compatible_integer_v<INT,T>;
+is_similar_v=is_compatible_integer_v<INT,TESTED>;
 
-template<typename T>
+template<typename TESTED>
 constexpr bool
-is_known_integer_v =    is_similar_v<std::uint8_t, T> ||
-                        is_similar_v<std::uint16_t, T> ||
-                        is_similar_v<std::uint32_t, T> ||
-                        is_similar_v<std::uint64_t, T> ||
-                        is_similar_v<std::int8_t, T> ||
-                        is_similar_v<std::int16_t, T> ||
-                        is_similar_v<std::int32_t, T> ||
-                        is_similar_v<std::int64_t, T>;
-
+is_known_integer_v =    is_similar_v<std::uint8_t,  TESTED>
+                     || is_similar_v<std::uint16_t, TESTED>
+                     || is_similar_v<std::uint32_t, TESTED>
+                     || is_similar_v<std::uint64_t, TESTED>
+                     || is_similar_v<std::int8_t,  TESTED>
+                     || is_similar_v<std::int16_t, TESTED>
+                     || is_similar_v<std::int32_t, TESTED>
+                     || is_similar_v<std::int64_t, TESTED>;
 
 }
 
