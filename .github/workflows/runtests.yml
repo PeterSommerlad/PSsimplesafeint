@@ -1,0 +1,22 @@
+name: psssafeint-tests
+on: [push]
+jobs:
+  install-conan:
+  run-all-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: create build directory
+        run: ${{github.workspace}}/build
+        
+      - name: Configure CMake
+        working-directory: ${{github.workspace}}/build
+        run: cmake ${{github.workspace}}/cevelop-workspace/PSSafeIntTests/
+        
+      - name: Build
+        working-directory: ${{github.workspace}}/build
+        run: cmake --build .
+        
+      - name: Test
+        working-directory: ${{github.workspace}}/build
+        run: ctest --output-on-failure
