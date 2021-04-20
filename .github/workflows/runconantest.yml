@@ -3,14 +3,19 @@ on: [push]
 jobs:
   run-conan-tests:
     runs-on: ubuntu-latest
+    env:
+      CONAN_USER_HOME: "${{ github.workspace }}/conan/"
     steps:
-      - uses: actions/checkout@v2
-              
       - name: install conan
         shell: bash
-        run: pip3 install conan
+        run: |
+          pip3 install wheel setuptools
+          pip3 install conan --upgrade
+        
+      - uses: actions/checkout@v2
         
       - name: run conan
         working-directory: ${{github.workspace}}/
         shell: bash
-        run: conan create . PeterSommerlad/testing -s compiler=gcc -s compiler.version=10 -s compiler.libcxx=libstdc++ -s compiler.cppstd=20
+        run: |
+          conan create . PeterSommerlad/testing -s compiler=gcc -s compiler.version=10 -s compiler.libcxx=libstdc++ -s compiler.cppstd=20
