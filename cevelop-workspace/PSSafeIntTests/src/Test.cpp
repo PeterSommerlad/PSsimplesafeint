@@ -358,7 +358,7 @@ void si8OutputAsInteger(){
 void ui8OutputAsInteger(){
     std::ostringstream out{};
     out << 42_ui8;
-    ASSERT_EQUAL("42",out.str());
+    ASSERT_EQUAL("42a",out.str());
 }
 
 void checkedFromInt(){
