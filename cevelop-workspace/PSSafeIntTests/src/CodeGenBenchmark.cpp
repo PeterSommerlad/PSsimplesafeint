@@ -32,8 +32,8 @@ struct operations {
     }
 };
 
-std::initializer_list<int8_t> i8_seed{1,1,2,3,5,8,13,21,34,55,89};
-std::initializer_list<psssint::si8> si8_seed{1_si8,1_si8,2_si8,3_si8,5_si8,8_si8,13_si8,21_si8,34_si8,55_si8,89_si8};
+std::initializer_list<int8_t> i8_seed{1,1,2,3,5,8/*,13,21,34,55,89*/};
+std::initializer_list<psssint::si8> si8_seed{1_si8,1_si8,2_si8,3_si8,5_si8,8_si8/*,13_si8,21_si8,34_si8,55_si8,89_si8*/};
 
 auto sum(operations<int8_t> const &ops){
     return ops.sum();
@@ -74,6 +74,9 @@ void codegenMultiplicationTest(){
     auto resi8 = product(operations<int8_t>{i8_seed});
     auto ressi8 = product( operations<si8>{si8_seed});
     ASSERT_EQUAL(resi8,to_int(ressi8));
+    ASSERT_EQUAL(from_int(resi8),ressi8);
+    ASSERTM("expect signed integer overflow not detected by ubsan",resi8 < 0);
+    ASSERTM("expect signed integer overflow not detected by ubsan",ressi8 < 0_si8);
 }
 void codegenSumThirdsTest(){
     auto resi8 = sumthirds(operations<int8_t>{i8_seed});
@@ -126,9 +129,9 @@ void codegenMultiplicationTest(){
     auto ressi16 = product( operations<si16>{si16_seed});
     ASSERT_EQUAL(resi16,to_int(ressi16));
     ASSERT_EQUAL(from_int(resi16),ressi16);
-    ASSERTM("expect signed integer overflow detected by ubsan",resi16 < 0);
-    ASSERTM("expect signed integer overflow not  by ubsan",ressi16 < 0_si16);
-    // ../src/CodeGenBenchmark.cpp:23:99: runtime error: signed integer overflow: 122522400 * 89 cannot be represented in type 'int'
+    ASSERTM("expect signed integer overflow not detected by ubsan",resi16 < 0);
+    ASSERTM("expect signed integer overflow not detected by ubsan",ressi16 < 0_si16);
+    // no detection of overflow by UBSAN
 
 }
 void codegenSumThirdsTest(){
@@ -184,7 +187,7 @@ void codegenMultiplicationTest(){
     ASSERT_EQUAL(resi32,to_int(ressi32));
     ASSERT_EQUAL(from_int(resi32),ressi32);
     ASSERTM("expect signed integer overflow detected by ubsan",resi32 < 0);
-    ASSERTM("expect signed integer overflow not  by ubsan",ressi32 < 0_si32);
+    ASSERTM("expect signed integer overflow not detected by ubsan",ressi32 < 0_si32);
     // ../src/CodeGenBenchmark.cpp:23:99: runtime error: signed integer overflow: 122522400 * 89 cannot be represented in type 'int'
 
 }
@@ -201,8 +204,10 @@ void codegenSubtractionTest(){
 
 }
 namespace int64 {
-std::initializer_list<int64_t> i64_seed{1,1,2,3,5,8,13,21,34,55,89};
-std::initializer_list<psssint::si64> si64_seed{1_si64,1_si64,2_si64,3_si64,5_si64,8_si64,13_si64,21_si64,34_si64,55_si64,89_si64};
+constexpr std::initializer_list<int64_t> i64_seed{1,1,2,3,5,8,13,21,34,55,89,
+                                        144,233,377,610};
+constexpr std::initializer_list<psssint::si64> si64_seed{1_si64,1_si64,2_si64,3_si64,5_si64,8_si64,13_si64,21_si64,34_si64,55_si64,89_si64,
+    144_si64,233_si64,377_si64,610_si64};
 
 auto sum(operations<int64_t> const &ops){
     return ops.sum();
@@ -241,8 +246,8 @@ void codegenMultiplicationTest(){
     ASSERT_EQUAL(resi64,to_int(ressi64));
     ASSERT_EQUAL(from_int(resi64),ressi64);
     ASSERTM("expect signed integer overflow detected by ubsan",resi64 < 0);
-    ASSERTM("expect signed integer overflow not  by ubsan",ressi64 < 0_si64);
-    // ../src/CodeGenBenchmark.cpp:23:99: runtime error: signed integer overflow: 122522400 * 89 cannot be represented in type 'int'
+    ASSERTM("expect signed integer overflow not detected by ubsan",ressi64 < 0_si64);
+    // ../src/CodeGenBenchmark.cpp:23:99: runtime error: signed integer overflow: 137932073613734400 * 610 cannot be represented in type 'long long int'
 
 }
 void codegenSumThirdsTest(){

@@ -62,11 +62,7 @@
 		<testcase classname="CodeGenBenchmark" name="int16::codegenSumThirdsTest"/>
 		<testcase classname="CodeGenBenchmark" name="int16::codegenSubtractionTest"/>
 		<testcase classname="CodeGenBenchmark" name="int64::codegenAdditionTest"/>
-		<testcase classname="CodeGenBenchmark" name="int64::codegenMultiplicationTest">
-			<failure message="../src/CodeGenBenchmark.cpp:243 codegenMultiplicationTest: expect signed integer overflow detected by ubsan">
-codegenMultiplicationTest: expect signed integer overflow detected by ubsan
-			</failure>
-		</testcase>
+		<testcase classname="CodeGenBenchmark" name="int64::codegenMultiplicationTest"/>
 		<testcase classname="CodeGenBenchmark" name="int64::codegenSumThirdsTest"/>
 		<testcase classname="CodeGenBenchmark" name="int64::codegenSubtractionTest"/>
 	</testsuite>
