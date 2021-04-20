@@ -42,4 +42,32 @@
 		<testcase classname="AllTests" name="ui16canNotbecomparedwithui8"/>
 		<testcase classname="AllTests" name="ui32CanNotbeComparedwithlong"/>
 	</testsuite>
+	<testsuite name="CodeGenBenchmark" tests="22">
+		<testcase classname="CodeGenBenchmark" name="codegenAdditionTest"/>
+		<testcase classname="CodeGenBenchmark" name="testUBSanWithSignedOverflow"/>
+		<testcase classname="CodeGenBenchmark" name="testNoSignedOverflow"/>
+		<testcase classname="CodeGenBenchmark" name="codegenMultiplicationTest"/>
+		<testcase classname="CodeGenBenchmark" name="codegenSumThirdsTest"/>
+		<testcase classname="CodeGenBenchmark" name="codegenSubtractionTest"/>
+		<testcase classname="CodeGenBenchmark" name="int32::codegenAdditionTest"/>
+		<testcase classname="CodeGenBenchmark" name="int32::codegenMultiplicationTest"/>
+		<testcase classname="CodeGenBenchmark" name="int32::codegenSumThirdsTest"/>
+		<testcase classname="CodeGenBenchmark" name="int32::codegenSubtractionTest"/>
+		<testcase classname="CodeGenBenchmark" name="uint32::codegenAdditionTest"/>
+		<testcase classname="CodeGenBenchmark" name="uint32::codegenMultiplicationTest"/>
+		<testcase classname="CodeGenBenchmark" name="uint32::codegenSumThirdsTest"/>
+		<testcase classname="CodeGenBenchmark" name="uint32::codegenSubtractionTest"/>
+		<testcase classname="CodeGenBenchmark" name="int16::codegenAdditionTest"/>
+		<testcase classname="CodeGenBenchmark" name="int16::codegenMultiplicationTest"/>
+		<testcase classname="CodeGenBenchmark" name="int16::codegenSumThirdsTest"/>
+		<testcase classname="CodeGenBenchmark" name="int16::codegenSubtractionTest"/>
+		<testcase classname="CodeGenBenchmark" name="int64::codegenAdditionTest"/>
+		<testcase classname="CodeGenBenchmark" name="int64::codegenMultiplicationTest">
+			<failure message="../src/CodeGenBenchmark.cpp:243 codegenMultiplicationTest: expect signed integer overflow detected by ubsan">
+codegenMultiplicationTest: expect signed integer overflow detected by ubsan
+			</failure>
+		</testcase>
+		<testcase classname="CodeGenBenchmark" name="int64::codegenSumThirdsTest"/>
+		<testcase classname="CodeGenBenchmark" name="int64::codegenSubtractionTest"/>
+	</testsuite>
 </testsuites>

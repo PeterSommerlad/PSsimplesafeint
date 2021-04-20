@@ -366,7 +366,7 @@ void checkedFromInt(){
 }
 
 
-
+#include "CodeGenBenchmark.h"
 
 bool runAllTests(int argc, char const *argv[]) {
     cute::suite s { };
@@ -416,6 +416,7 @@ bool runAllTests(int argc, char const *argv[]) {
     cute::xml_listener<cute::ide_listener<>> lis(xmlfile.out);
     auto runner = cute::makeRunner(lis, argc, argv);
     bool success = runner(s, "AllTests");
+    runner(make_suite_CodeGenBenchmark(),"CodeGenBenchmark");
     return success;
 }
 

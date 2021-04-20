@@ -39,4 +39,4 @@ Debug
 .settings/
 *Test.xml
 .*.html
-
+*.asm

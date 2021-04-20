@@ -12,7 +12,7 @@
 namespace psssint { // Peter Sommerlad's simple safe integers
 
 // unsigned 
-enum class ui8: std::uint8_t{ tag_to_prevent_mixing_other_enums };
+enum class ui8 : std::uint8_t { tag_to_prevent_mixing_other_enums };
 enum class ui16: std::uint16_t{ tag_to_prevent_mixing_other_enums };
 enum class ui32: std::uint32_t{ tag_to_prevent_mixing_other_enums };
 enum class ui64: std::uint64_t{ tag_to_prevent_mixing_other_enums };
@@ -60,7 +60,7 @@ ui64 operator""_ui64(unsigned long long val) {
 
 }
 // signed
-enum class si8: std::int8_t{ tag_to_prevent_mixing_other_enums };
+enum class si8 : std::int8_t { tag_to_prevent_mixing_other_enums };
 enum class si16: std::int16_t{tag_to_prevent_mixing_other_enums};
 enum class si32: std::int32_t{tag_to_prevent_mixing_other_enums};
 enum class si64: std::int64_t{tag_to_prevent_mixing_other_enums};
@@ -154,13 +154,87 @@ using promoted_t = // will promote keeping signedness
 
 template<typename E>
 concept a_safeint = detail_::is_safeint_v<E>;
+} // psssint
 
+
+// provide std::numeric_limits
+namespace std {
+
+
+
+template<psssint::a_safeint type>
+  struct numeric_limits<type>
+  {
+    using ult = psssint::detail_::ULT<type>;
+    static constexpr bool is_specialized = true;
+
+    static constexpr type
+    min() noexcept { return type{numeric_limits<ult>::min()}; }
+
+    static constexpr type
+    max() noexcept { return type{numeric_limits<ult>::max()}; }
+
+    static constexpr type
+    lowest() noexcept { return type{numeric_limits<ult>::lowest()}; }
+
+    static constexpr int digits = numeric_limits<ult>::digits;
+    static constexpr int digits10 = numeric_limits<ult>::digits10;
+    static constexpr int max_digits10 = numeric_limits<ult>::max_digits10;
+    static constexpr bool is_signed = numeric_limits<ult>::is_signed;
+    static constexpr bool is_integer = numeric_limits<ult>::is_integer;
+    static constexpr bool is_exact = numeric_limits<ult>::is_exact;
+    static constexpr int radix = numeric_limits<ult>::radix;
+
+    static constexpr type
+    epsilon() noexcept {  return type{numeric_limits<ult>::epsilon()}; }
+
+    static constexpr type
+    round_error() noexcept {  return type{numeric_limits<ult>::round_error()}; }
+
+    static constexpr int min_exponent = numeric_limits<ult>::min_exponent;
+    static constexpr int min_exponent10 = numeric_limits<ult>::min_exponent10;
+    static constexpr int max_exponent = numeric_limits<ult>::max_exponent;
+    static constexpr int max_exponent10 = numeric_limits<ult>::max_exponent10;
+
+    static constexpr bool has_infinity = numeric_limits<ult>::has_infinity;
+    static constexpr bool has_quiet_NaN = numeric_limits<ult>::has_quiet_NaN;
+    static constexpr bool has_signaling_NaN = numeric_limits<ult>::has_signaling_NaN;
+    static constexpr float_denorm_style has_denorm
+     = numeric_limits<ult>::has_denorm;
+    static constexpr bool has_denorm_loss = numeric_limits<ult>::has_denorm_loss;
+
+    static constexpr type
+    infinity() noexcept { return type{numeric_limits<ult>::infinity()}; }
+
+    static constexpr type
+    quiet_NaN() noexcept { return type{numeric_limits<ult>::quiet_NaN()}; }
+
+    static constexpr type
+    signaling_NaN() noexcept
+    { return type{numeric_limits<ult>::signaling_NaN()}; }
+
+    static constexpr type
+    denorm_min() noexcept
+    { return type{numeric_limits<ult>::denorm_min()}; }
+
+    static constexpr bool is_iec559 =  numeric_limits<ult>::is_iec559;
+    static constexpr bool is_bounded =  numeric_limits<ult>::is_bounded;
+    static constexpr bool is_modulo =  numeric_limits<ult>::is_modulo;
+
+    static constexpr bool traps = numeric_limits<ult>::traps;
+    static constexpr bool tinyness_before =  numeric_limits<ult>::tinyness_before;
+    static constexpr float_round_style round_style =  numeric_limits<ult>::round_style;
+  };
+
+}
+
+namespace psssint{
 
 namespace detail_{
 
 template<a_safeint E, a_safeint F>
 constexpr bool
-same_signedness_v = detail_::is_safeint_v<E> && detail_::is_safeint_v<F> && std::is_unsigned_v<ULT<E>> == std::is_unsigned_v<ULT<F>>;
+same_signedness_v = detail_::is_safeint_v<E> && detail_::is_safeint_v<F> && std::numeric_limits<E>::is_signed == std::numeric_limits<F>::is_signed;
 
 template<typename CHAR>
 constexpr bool
@@ -289,7 +363,7 @@ from_int_to(FROM val)
 template<a_safeint E>
 constexpr E
 operator-(E l) noexcept
-requires std::is_signed_v<detail_::ULT<E>>
+requires std::numeric_limits<E>::is_signed
 {
     return static_cast<E>(1u + ~to_uint(l));
 }
