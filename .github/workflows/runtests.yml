@@ -10,10 +10,18 @@ jobs:
         
       - name: Configure CMake
         working-directory: ${{github.workspace}}/build
+        shell: bash
+        env:
+          CC:   gcc-10
+          CXX:  g++-10
         run: cmake ${{github.workspace}}/cevelop-workspace/PSSafeIntTests/
         
       - name: Build
         working-directory: ${{github.workspace}}/build
+        shell: bash
+        env:
+          CC:   gcc-10
+          CXX:  g++-10
         run: cmake --build .
         
       - name: Test
