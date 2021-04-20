@@ -6,7 +6,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: create build directory
-        run: ${{github.workspace}}/build
+        run: mkdir -p -v ${{github.workspace}}/build
         
       - name: Configure CMake
         working-directory: ${{github.workspace}}/build
