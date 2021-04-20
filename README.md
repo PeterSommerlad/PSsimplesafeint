@@ -1,4 +1,8 @@
 # PSsimplesafeint
+
+![tests](https://github.com/PeterSommerlad/PSsimplesafeint/actions/workflows/runtests.yml/badge.svg)
+
+
 A C++20 implementation of safe (wrap around) integers following MISRA C++ rules.
 
 An `#ifdef`ed C++17 implementation is available in branch C++17.
