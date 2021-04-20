@@ -1,7 +1,6 @@
 name: psssafeint-tests
 on: [push]
 jobs:
-  install-conan:
   run-all-tests:
     runs-on: ubuntu-latest
     steps:
