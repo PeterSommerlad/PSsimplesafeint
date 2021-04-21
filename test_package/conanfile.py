@@ -8,10 +8,10 @@ class PssimplesafeintTestConan(ConanFile):
     generators = "cmake"
 
     def build(self):
-        cmake = CMake(self)
+        cmake = CMake(self, set_cmake_flags=True)
         # Current dir is "test_package/build/<build_id>" and CMakeLists.txt is
         # in "test_package"
-        myargs = ["-DCMAKE_CXX_COMPILER=g++"]
+        myargs = ["-DCMAKE_CXX_COMPILER=g++-10"]
         cmake.configure(args=myargs)
         cmake.build()
 
