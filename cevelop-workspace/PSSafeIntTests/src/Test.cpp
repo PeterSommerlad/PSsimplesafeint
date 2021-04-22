@@ -3,6 +3,7 @@
 #include "ide_listener.h"
 #include "xml_listener.h"
 #include "cute_runner.h"
+#include "CodeGenBenchmark.h"
 #include <type_traits>
 #include <cstddef>
 
@@ -415,6 +416,7 @@ bool runAllTests(int argc, char const *argv[]) {
     cute::xml_listener<cute::ide_listener<>> lis(xmlfile.out);
     auto runner = cute::makeRunner(lis, argc, argv);
     bool success = runner(s, "AllTests");
+    success = runner(make_suite_CodeGenBenchmark(),"CodeGenBenchmark") && success;
     return success;
 }
 

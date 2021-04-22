@@ -1,0 +1,29 @@
+name: psssafeint-tests
+on: [push]
+jobs:
+  run-all-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: create build directory
+        run: mkdir -p -v ${{github.workspace}}/build
+        
+      - name: Configure CMake
+        working-directory: ${{github.workspace}}/build
+        shell: bash
+        env:
+          CC:   gcc-10
+          CXX:  g++-10
+        run: cmake ${{github.workspace}}/cevelop-workspace/PSSafeIntTests/
+        
+      - name: Build
+        working-directory: ${{github.workspace}}/build
+        shell: bash
+        env:
+          CC:   gcc-10
+          CXX:  g++-10
+        run: cmake --build .
+        
+      - name: Test
+        working-directory: ${{github.workspace}}/build
+        run: ctest --output-on-failure

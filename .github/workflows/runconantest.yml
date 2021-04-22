@@ -1,0 +1,24 @@
+name: psssafeint-conan-tests
+on: [push]
+jobs:
+  run-conan-tests:
+    runs-on: ubuntu-latest
+    env:
+      CONAN_USER_HOME: "${{ github.workspace }}/conan/"
+    steps:
+      - name: install conan
+        shell: bash
+        run: |
+          pip3 install wheel setuptools
+          pip3 install conan --upgrade
+        
+      - uses: actions/checkout@v2
+        
+      - name: run conan
+        working-directory: ${{github.workspace}}/
+        shell: bash
+        env: 
+          CC:  gcc-10
+          CXX: g++-10
+        run: |
+          conan create . PeterSommerlad/testing -s compiler=gcc -s compiler.version=10 -s compiler.libcxx=libstdc++11 -s compiler.cppstd=20
