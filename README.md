@@ -1,10 +1,10 @@
 # PSsimplesafeint
 
-![tests](https://github.com/PeterSommerlad/PSsimplesafeint/actions/workflows/runtests.yml/badge.svg?branch=C++17)
+![tests](https://github.com/PeterSommerlad/PSsimplesafeint/actions/workflows/runtests.yml/badge.svg?branch=C%2B%2B17)
 
 <br/>
 
-![conan check](https://github.com/PeterSommerlad/PSsimplesafeint/actions/workflows/runconantest.yml/badge.svg?branch=C++17)
+![conan check](https://github.com/PeterSommerlad/PSsimplesafeint/actions/workflows/runconantest.yml/badge.svg?branch=C%2B%2B17)
 
 
 A C++20 implementation of safe (wrap around) integers following MISRA C++ rules.
