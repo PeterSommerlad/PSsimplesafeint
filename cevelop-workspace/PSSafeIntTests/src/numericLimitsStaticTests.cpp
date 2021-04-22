@@ -17,17 +17,21 @@ do
 done
 
 for variable in is_specialized digits digits10 max_digits10 is_signed is_integer is_exact radix min_exponent min_exponent10 max_exponent max_exponent10 \
-                has_infinity has_quiet_NaN has_signaling_NaN has_denorm has_denorm_loss is_iec559 is_bounded is_modulo traps tinyness_before round_style
+                has_infinity has_quiet_NaN has_signaling_NaN has_denorm has_denorm_loss is_iec559 is_bounded traps tinyness_before round_style
 do
   echo "static_assert(std::numeric_limits<$safeint>::$variable == std::numeric_limits<std::underlying_type_t<$safeint>>::$variable);"
 
 done
+
+  echo "static_assert(std::numeric_limits<$safeint>::is_modulo);"
+
 
 done
 
 
 */
 using namespace psssint;
+
 
 static_assert(std::numeric_limits<si8>::min() == from_int(std::numeric_limits<std::underlying_type_t<si8>>::min()) );
 static_assert(std::numeric_limits<si8>::max() == from_int(std::numeric_limits<std::underlying_type_t<si8>>::max()) );
@@ -57,10 +61,10 @@ static_assert(std::numeric_limits<si8>::has_denorm == std::numeric_limits<std::u
 static_assert(std::numeric_limits<si8>::has_denorm_loss == std::numeric_limits<std::underlying_type_t<si8>>::has_denorm_loss);
 static_assert(std::numeric_limits<si8>::is_iec559 == std::numeric_limits<std::underlying_type_t<si8>>::is_iec559);
 static_assert(std::numeric_limits<si8>::is_bounded == std::numeric_limits<std::underlying_type_t<si8>>::is_bounded);
-static_assert(std::numeric_limits<si8>::is_modulo == std::numeric_limits<std::underlying_type_t<si8>>::is_modulo);
 static_assert(std::numeric_limits<si8>::traps == std::numeric_limits<std::underlying_type_t<si8>>::traps);
 static_assert(std::numeric_limits<si8>::tinyness_before == std::numeric_limits<std::underlying_type_t<si8>>::tinyness_before);
 static_assert(std::numeric_limits<si8>::round_style == std::numeric_limits<std::underlying_type_t<si8>>::round_style);
+static_assert(std::numeric_limits<si8>::is_modulo);
 static_assert(std::numeric_limits<si16>::min() == from_int(std::numeric_limits<std::underlying_type_t<si16>>::min()) );
 static_assert(std::numeric_limits<si16>::max() == from_int(std::numeric_limits<std::underlying_type_t<si16>>::max()) );
 static_assert(std::numeric_limits<si16>::lowest() == from_int(std::numeric_limits<std::underlying_type_t<si16>>::lowest()) );
@@ -89,10 +93,10 @@ static_assert(std::numeric_limits<si16>::has_denorm == std::numeric_limits<std::
 static_assert(std::numeric_limits<si16>::has_denorm_loss == std::numeric_limits<std::underlying_type_t<si16>>::has_denorm_loss);
 static_assert(std::numeric_limits<si16>::is_iec559 == std::numeric_limits<std::underlying_type_t<si16>>::is_iec559);
 static_assert(std::numeric_limits<si16>::is_bounded == std::numeric_limits<std::underlying_type_t<si16>>::is_bounded);
-static_assert(std::numeric_limits<si16>::is_modulo == std::numeric_limits<std::underlying_type_t<si16>>::is_modulo);
 static_assert(std::numeric_limits<si16>::traps == std::numeric_limits<std::underlying_type_t<si16>>::traps);
 static_assert(std::numeric_limits<si16>::tinyness_before == std::numeric_limits<std::underlying_type_t<si16>>::tinyness_before);
 static_assert(std::numeric_limits<si16>::round_style == std::numeric_limits<std::underlying_type_t<si16>>::round_style);
+static_assert(std::numeric_limits<si16>::is_modulo);
 static_assert(std::numeric_limits<si32>::min() == from_int(std::numeric_limits<std::underlying_type_t<si32>>::min()) );
 static_assert(std::numeric_limits<si32>::max() == from_int(std::numeric_limits<std::underlying_type_t<si32>>::max()) );
 static_assert(std::numeric_limits<si32>::lowest() == from_int(std::numeric_limits<std::underlying_type_t<si32>>::lowest()) );
@@ -121,10 +125,10 @@ static_assert(std::numeric_limits<si32>::has_denorm == std::numeric_limits<std::
 static_assert(std::numeric_limits<si32>::has_denorm_loss == std::numeric_limits<std::underlying_type_t<si32>>::has_denorm_loss);
 static_assert(std::numeric_limits<si32>::is_iec559 == std::numeric_limits<std::underlying_type_t<si32>>::is_iec559);
 static_assert(std::numeric_limits<si32>::is_bounded == std::numeric_limits<std::underlying_type_t<si32>>::is_bounded);
-static_assert(std::numeric_limits<si32>::is_modulo == std::numeric_limits<std::underlying_type_t<si32>>::is_modulo);
 static_assert(std::numeric_limits<si32>::traps == std::numeric_limits<std::underlying_type_t<si32>>::traps);
 static_assert(std::numeric_limits<si32>::tinyness_before == std::numeric_limits<std::underlying_type_t<si32>>::tinyness_before);
 static_assert(std::numeric_limits<si32>::round_style == std::numeric_limits<std::underlying_type_t<si32>>::round_style);
+static_assert(std::numeric_limits<si32>::is_modulo);
 static_assert(std::numeric_limits<si64>::min() == from_int(std::numeric_limits<std::underlying_type_t<si64>>::min()) );
 static_assert(std::numeric_limits<si64>::max() == from_int(std::numeric_limits<std::underlying_type_t<si64>>::max()) );
 static_assert(std::numeric_limits<si64>::lowest() == from_int(std::numeric_limits<std::underlying_type_t<si64>>::lowest()) );
@@ -153,10 +157,10 @@ static_assert(std::numeric_limits<si64>::has_denorm == std::numeric_limits<std::
 static_assert(std::numeric_limits<si64>::has_denorm_loss == std::numeric_limits<std::underlying_type_t<si64>>::has_denorm_loss);
 static_assert(std::numeric_limits<si64>::is_iec559 == std::numeric_limits<std::underlying_type_t<si64>>::is_iec559);
 static_assert(std::numeric_limits<si64>::is_bounded == std::numeric_limits<std::underlying_type_t<si64>>::is_bounded);
-static_assert(std::numeric_limits<si64>::is_modulo == std::numeric_limits<std::underlying_type_t<si64>>::is_modulo);
 static_assert(std::numeric_limits<si64>::traps == std::numeric_limits<std::underlying_type_t<si64>>::traps);
 static_assert(std::numeric_limits<si64>::tinyness_before == std::numeric_limits<std::underlying_type_t<si64>>::tinyness_before);
 static_assert(std::numeric_limits<si64>::round_style == std::numeric_limits<std::underlying_type_t<si64>>::round_style);
+static_assert(std::numeric_limits<si64>::is_modulo);
 static_assert(std::numeric_limits<ui8>::min() == from_int(std::numeric_limits<std::underlying_type_t<ui8>>::min()) );
 static_assert(std::numeric_limits<ui8>::max() == from_int(std::numeric_limits<std::underlying_type_t<ui8>>::max()) );
 static_assert(std::numeric_limits<ui8>::lowest() == from_int(std::numeric_limits<std::underlying_type_t<ui8>>::lowest()) );
@@ -185,10 +189,10 @@ static_assert(std::numeric_limits<ui8>::has_denorm == std::numeric_limits<std::u
 static_assert(std::numeric_limits<ui8>::has_denorm_loss == std::numeric_limits<std::underlying_type_t<ui8>>::has_denorm_loss);
 static_assert(std::numeric_limits<ui8>::is_iec559 == std::numeric_limits<std::underlying_type_t<ui8>>::is_iec559);
 static_assert(std::numeric_limits<ui8>::is_bounded == std::numeric_limits<std::underlying_type_t<ui8>>::is_bounded);
-static_assert(std::numeric_limits<ui8>::is_modulo == std::numeric_limits<std::underlying_type_t<ui8>>::is_modulo);
 static_assert(std::numeric_limits<ui8>::traps == std::numeric_limits<std::underlying_type_t<ui8>>::traps);
 static_assert(std::numeric_limits<ui8>::tinyness_before == std::numeric_limits<std::underlying_type_t<ui8>>::tinyness_before);
 static_assert(std::numeric_limits<ui8>::round_style == std::numeric_limits<std::underlying_type_t<ui8>>::round_style);
+static_assert(std::numeric_limits<ui8>::is_modulo);
 static_assert(std::numeric_limits<ui16>::min() == from_int(std::numeric_limits<std::underlying_type_t<ui16>>::min()) );
 static_assert(std::numeric_limits<ui16>::max() == from_int(std::numeric_limits<std::underlying_type_t<ui16>>::max()) );
 static_assert(std::numeric_limits<ui16>::lowest() == from_int(std::numeric_limits<std::underlying_type_t<ui16>>::lowest()) );
@@ -217,10 +221,10 @@ static_assert(std::numeric_limits<ui16>::has_denorm == std::numeric_limits<std::
 static_assert(std::numeric_limits<ui16>::has_denorm_loss == std::numeric_limits<std::underlying_type_t<ui16>>::has_denorm_loss);
 static_assert(std::numeric_limits<ui16>::is_iec559 == std::numeric_limits<std::underlying_type_t<ui16>>::is_iec559);
 static_assert(std::numeric_limits<ui16>::is_bounded == std::numeric_limits<std::underlying_type_t<ui16>>::is_bounded);
-static_assert(std::numeric_limits<ui16>::is_modulo == std::numeric_limits<std::underlying_type_t<ui16>>::is_modulo);
 static_assert(std::numeric_limits<ui16>::traps == std::numeric_limits<std::underlying_type_t<ui16>>::traps);
 static_assert(std::numeric_limits<ui16>::tinyness_before == std::numeric_limits<std::underlying_type_t<ui16>>::tinyness_before);
 static_assert(std::numeric_limits<ui16>::round_style == std::numeric_limits<std::underlying_type_t<ui16>>::round_style);
+static_assert(std::numeric_limits<ui16>::is_modulo);
 static_assert(std::numeric_limits<ui32>::min() == from_int(std::numeric_limits<std::underlying_type_t<ui32>>::min()) );
 static_assert(std::numeric_limits<ui32>::max() == from_int(std::numeric_limits<std::underlying_type_t<ui32>>::max()) );
 static_assert(std::numeric_limits<ui32>::lowest() == from_int(std::numeric_limits<std::underlying_type_t<ui32>>::lowest()) );
@@ -249,10 +253,10 @@ static_assert(std::numeric_limits<ui32>::has_denorm == std::numeric_limits<std::
 static_assert(std::numeric_limits<ui32>::has_denorm_loss == std::numeric_limits<std::underlying_type_t<ui32>>::has_denorm_loss);
 static_assert(std::numeric_limits<ui32>::is_iec559 == std::numeric_limits<std::underlying_type_t<ui32>>::is_iec559);
 static_assert(std::numeric_limits<ui32>::is_bounded == std::numeric_limits<std::underlying_type_t<ui32>>::is_bounded);
-static_assert(std::numeric_limits<ui32>::is_modulo == std::numeric_limits<std::underlying_type_t<ui32>>::is_modulo);
 static_assert(std::numeric_limits<ui32>::traps == std::numeric_limits<std::underlying_type_t<ui32>>::traps);
 static_assert(std::numeric_limits<ui32>::tinyness_before == std::numeric_limits<std::underlying_type_t<ui32>>::tinyness_before);
 static_assert(std::numeric_limits<ui32>::round_style == std::numeric_limits<std::underlying_type_t<ui32>>::round_style);
+static_assert(std::numeric_limits<ui32>::is_modulo);
 static_assert(std::numeric_limits<ui64>::min() == from_int(std::numeric_limits<std::underlying_type_t<ui64>>::min()) );
 static_assert(std::numeric_limits<ui64>::max() == from_int(std::numeric_limits<std::underlying_type_t<ui64>>::max()) );
 static_assert(std::numeric_limits<ui64>::lowest() == from_int(std::numeric_limits<std::underlying_type_t<ui64>>::lowest()) );
@@ -281,7 +285,7 @@ static_assert(std::numeric_limits<ui64>::has_denorm == std::numeric_limits<std::
 static_assert(std::numeric_limits<ui64>::has_denorm_loss == std::numeric_limits<std::underlying_type_t<ui64>>::has_denorm_loss);
 static_assert(std::numeric_limits<ui64>::is_iec559 == std::numeric_limits<std::underlying_type_t<ui64>>::is_iec559);
 static_assert(std::numeric_limits<ui64>::is_bounded == std::numeric_limits<std::underlying_type_t<ui64>>::is_bounded);
-static_assert(std::numeric_limits<ui64>::is_modulo == std::numeric_limits<std::underlying_type_t<ui64>>::is_modulo);
 static_assert(std::numeric_limits<ui64>::traps == std::numeric_limits<std::underlying_type_t<ui64>>::traps);
 static_assert(std::numeric_limits<ui64>::tinyness_before == std::numeric_limits<std::underlying_type_t<ui64>>::tinyness_before);
 static_assert(std::numeric_limits<ui64>::round_style == std::numeric_limits<std::underlying_type_t<ui64>>::round_style);
+static_assert(std::numeric_limits<ui64>::is_modulo);

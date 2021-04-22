@@ -220,7 +220,7 @@ template<psssint::a_safeint type>
 
     static constexpr bool is_iec559 =  numeric_limits<ult>::is_iec559;
     static constexpr bool is_bounded =  numeric_limits<ult>::is_bounded;
-    static constexpr bool is_modulo =  numeric_limits<ult>::is_modulo;
+    static constexpr bool is_modulo =  true;
 
     static constexpr bool traps = numeric_limits<ult>::traps;
     static constexpr bool tinyness_before =  numeric_limits<ult>::tinyness_before;
