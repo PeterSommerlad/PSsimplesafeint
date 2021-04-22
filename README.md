@@ -1,7 +1,7 @@
 # PSsimplesafeint
 
 ![tests](https://github.com/PeterSommerlad/PSsimplesafeint/actions/workflows/runtests.yml/badge.svg)
-![conan-check](https://github.com/PeterSommerlad/PSsimplesafeint/actions/workflows/runconantests.yml/badge.svg)
+![conan-check](https://github.com/PeterSommerlad/PSsimplesafeint/actions/workflows/runconantest.yml/badge.svg)
 
 
 A C++20 implementation of safe (wrap around) integers following MISRA C++ rules.
@@ -24,7 +24,7 @@ enum class si32;  auto g = 7_si32;
 enum class si64;  auto h = 8_si64;
 ```
 
-You can play around with it on compiler explorer starting [here](https://godbolt.org/z/dfGnPd)
+You can play around with it on compiler explorer starting [here](https://godbolt.org/z/e3naEj83b)
 
 
 Some extra features:
