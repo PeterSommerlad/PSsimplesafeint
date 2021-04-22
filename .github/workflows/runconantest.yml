@@ -13,6 +13,8 @@ jobs:
           pip3 install conan --upgrade
         
       - uses: actions/checkout@v2
+        with:
+          ref: C++17
         
       - name: run conan
         working-directory: ${{github.workspace}}/

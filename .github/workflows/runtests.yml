@@ -5,6 +5,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          ref: C++17
       - name: create build directory
         run: mkdir -p -v ${{github.workspace}}/build
         
