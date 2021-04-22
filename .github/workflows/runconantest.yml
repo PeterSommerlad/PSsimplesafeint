@@ -1,4 +1,4 @@
-name: psssafeint-conan-tests
+name: psssafeint-conan-check
 on: [push]
 jobs:
   run-conan-tests:
