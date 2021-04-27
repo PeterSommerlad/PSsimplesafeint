@@ -7,6 +7,7 @@ project(PSSafeIntTests)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+add_compile_definitions(NDEBUG)
 
 file(GLOB SOURCES src/*.cpp)
 
