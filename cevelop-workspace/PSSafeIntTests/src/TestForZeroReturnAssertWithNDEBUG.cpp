@@ -22,7 +22,7 @@ void thisIsATestForZeroReturnAssertWithNDEBUGTest() {
 #endif
     #endif
 
-    //constexpr auto should_not_compile = 1_si8 / divisor;
+    //constexpr auto should_not_compile = 1_si8 / divisor; in Test.cpp
 }
 
 //static_assert(1_si8 / 0_si8 == 0_si8, "this should not compile");
@@ -44,7 +44,7 @@ void ModuloTestForZeroReturnAssertWithNDEBUGTest() {
 #endif
     #endif
 
-    // constexpr auto should_not_compile = 1_ui8 % divisor;
+    //constexpr auto should_not_compile = 1_ui8 % divisor; in Test.cpp
 }
 
 void ShiftLeftTestForZeroReturnAssertWithNDEBUGTest() {
@@ -64,7 +64,7 @@ void ShiftLeftTestForZeroReturnAssertWithNDEBUGTest() {
 #endif
     #endif
 
-    // constexpr auto should_not_compile = 1_ui8 << shiftby;
+     //constexpr auto should_not_compile = 1_ui8 << shiftby; in Test.cpp
 }
 void ShiftRightTestForZeroReturnAssertWithNDEBUGTest() {
     constexpr auto shiftby = 8_ui8;
@@ -83,7 +83,7 @@ void ShiftRightTestForZeroReturnAssertWithNDEBUGTest() {
 #endif
     #endif
 
-    // constexpr auto should_not_compile = 1_ui8 >> shiftby;
+     //constexpr auto should_not_compile = 1_ui8 >> shiftby; in Test.cpp
 }
 
 

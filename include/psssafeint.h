@@ -16,7 +16,8 @@
   #ifdef __cpp_lib_is_constant_evaluated
     #define ps_assert(default_value, cond) \
         if (std::is_constant_evaluated()) {\
-           if (not (cond)) throw(#cond); /* compile error */\
+            extern void this_function_is_only_called_because_assertion_failed_at_compiletime(char const *);\
+           if (not (cond)) this_function_is_only_called_because_assertion_failed_at_compiletime(#cond); /* compile error */\
         } else {\
            if (not (cond) ) return default_value;/* last resort avoid UB */\
         }
@@ -704,12 +705,7 @@ requires same_signedness<E,F>
 #endif
 {
     using result_t=std::conditional_t<sizeof(E)>=sizeof(F),E,F>;
-#pragma GCC diagnostic push
-#if defined(__GNUG__) && !defined(__clang__)
-#pragma GCC diagnostic ignored "-Wterminate"
-#endif
     ps_assert(result_t{}, r != F{} && " division by zero");
-#pragma GCC diagnostic pop
     return static_cast<result_t>(
             static_cast<detail_::ULT<result_t>>(
                     to_uint(l)
@@ -756,12 +752,7 @@ requires same_signedness<E,F> && std::is_unsigned_v<detail_::ULT<E>>
 #endif
 {
     using result_t=std::conditional_t<sizeof(E)>=sizeof(F),E,F>;
-#pragma GCC diagnostic push
-#if defined(__GNUG__) && !defined(__clang__)
-#pragma GCC diagnostic ignored "-Wterminate"
-#endif
     ps_assert(result_t{}, r != F{} && " division by zero");
-#pragma GCC diagnostic pop
     return static_cast<result_t>(
             static_cast<detail_::ULT<result_t>>(
                     to_uint(l)
@@ -956,12 +947,7 @@ operator<<(E l, F r) NOEXCEPT_WITH_THROWING_ASSERTS
 requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
 #endif
 {
-#pragma GCC diagnostic push
-#if defined(__GNUG__) && !defined(__clang__)
-#pragma GCC diagnostic ignored "-Wterminate"
-#endif
     ps_assert(E{},static_cast<size_t>(to_int(r)) < sizeof(E)*CHAR_BIT && "trying to shift by too many bits");
-#pragma GCC diagnostic pop
     return static_cast<E>(to_int(l)<<to_int(r));
 }
 #ifdef __cpp_concepts
@@ -1001,12 +987,7 @@ operator>>(E l, F r) NOEXCEPT_WITH_THROWING_ASSERTS
 requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
 #endif
 {
-#pragma GCC diagnostic push
-#if defined(__GNUG__) && !defined(__clang__)
-#pragma GCC diagnostic ignored "-Wterminate"
-#endif
     ps_assert(E{},static_cast<size_t>(to_int(r)) < sizeof(E)*CHAR_BIT && "trying to shift by too many bits");
-#pragma GCC diagnostic pop
     return static_cast<E>(to_int(l)>>to_int(r));
 }
 #ifdef __cpp_concepts
