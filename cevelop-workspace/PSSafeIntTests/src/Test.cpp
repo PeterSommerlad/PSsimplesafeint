@@ -1,3 +1,4 @@
+#include "TestForZeroReturnAssertWithNDEBUG.h"
 #include "psssafeint.h"
 #include "cute.h"
 #include "ide_listener.h"
@@ -6,13 +7,57 @@
 #include "CodeGenBenchmark.h"
 #include <type_traits>
 #include <cstddef>
-#include "TestForZeroReturnAssertWithNDEBUG.h"
 
 
 
 using namespace psssint::literals;
 
 namespace _testing {
+
+namespace compile_checks {
+using namespace psssint;
+
+template<auto value>
+using consume_value = void;
+
+
+#define concat_line_impl(A, B) A##_##B
+#define concat_line(A, B) concat_line_impl(A,B)
+
+#define check_does_compile(NOT, FROM, oper) \
+namespace concat_line(NOT##_test, __LINE__) { \
+        template<typename T, typename=void>\
+        constexpr bool\
+        expression_compiles=false;\
+template<typename T> \
+constexpr bool \
+expression_compiles<T, consume_value<(T{} oper T{})> > = true;\
+    static_assert(NOT expression_compiles<FROM>, "should not compile: " #oper);\
+} // namespace tag
+
+
+// need to be on separate lines for disambiguation
+check_does_compile(not,  si8 , <<  )
+check_does_compile(   ,  ui8 , << )
+check_does_compile(not,  si8 , >>  )
+check_does_compile(   ,  ui8 , >> )
+check_does_compile(not,  ui8 , + (1_ui8 << 10_ui8) + ) // too wide shift
+check_does_compile(   ,  ui8 , + (1_ui8 << 7_ui8) + ) // too wide shift
+check_does_compile(not,  ui8 , + (0x80_ui8 >> 10_ui8) + ) // too wide shift
+check_does_compile(   ,  ui8 , + (0x80_ui8 >> 7_ui8) + ) // too wide shift
+check_does_compile(not,  ui8 ,  % ) // modulo 0
+check_does_compile(not,  si8 ,  / ) // div 0
+check_does_compile(not,  si8 ,  % ) // modulo not working
+check_does_compile(not,  ui8 ,  / ) // div 0
+check_does_compile(   ,  ui8 , +( 1_ui8  / 1_ui8)+ ) // div
+check_does_compile(   ,  ui8 , +( 11_ui8  % 3_ui8)+ ) // mod
+check_does_compile(not,  ui8 , + 1_si8 + ) // mod
+check_does_compile(   ,  ui8 , + 255_ui8 + 1_ui8 + ) // mod
+
+}
+#undef check_does_compile
+#undef concat_line_impl
+#undef concat_line
 
 template<typename FROM, typename=void>
 constexpr bool
