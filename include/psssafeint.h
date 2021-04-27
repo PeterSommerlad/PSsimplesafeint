@@ -3,11 +3,35 @@
 
 #include <cstdint>
 #include <type_traits>
-#include <cassert>
 #include <iosfwd>
 #include <limits>
 #include <climits>
 #include <concepts> // std::integral
+
+
+
+#ifdef NDEBUG
+  #define ps_assert(default_value, cond) \
+    if (std::is_constant_evaluated()) {\
+       if (not (cond)) throw(#cond); /* compile error */\
+    } else {\
+       if (not (cond) ) return default_value;/* last resort avoid UB */\
+    }
+  #define NOEXCEPT_WITH_THROWING_ASSERTS noexcept
+#else
+  #ifdef PS_ASSERT_THROWS
+    #define ps_assert(default_value, cond)  ((cond)?true: throw(#cond))
+    #define NOEXCEPT_WITH_THROWING_ASSERTS noexcept(false)
+
+  #else
+    #include <cassert>
+    #define ps_assert(default_value, cond) assert(cond)
+    #define NOEXCEPT_WITH_THROWING_ASSERTS noexcept
+  #endif
+#endif
+
+
+
 
 namespace psssint { // Peter Sommerlad's simple safe integers
 
@@ -482,11 +506,16 @@ requires same_signedness<E,F>
 }
 template<a_safeint E, a_safeint F>
 constexpr auto
-operator/(E l, F r) noexcept
+operator/(E l, F r) NOEXCEPT_WITH_THROWING_ASSERTS
 requires same_signedness<E,F>
 {
     using result_t=std::conditional_t<sizeof(E)>=sizeof(F),E,F>;
-    assert(r != F{});
+#pragma GCC diagnostic push
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wterminate"
+#endif
+    ps_assert(result_t{}, r != F{} && " division by zero");
+#pragma GCC diagnostic pop
     return static_cast<result_t>(
             static_cast<detail_::ULT<result_t>>(
                     to_uint(l)
@@ -501,17 +530,21 @@ operator/=(E &l, F r) noexcept
 requires same_signedness<E,F>
 {
     static_assert(sizeof(E) >= sizeof(F),"dividing by too large integer type");
-    assert(r != F{} && "division by zero");
     l = static_cast<E>(l/r);
     return l;
 }
 template<a_safeint E, a_safeint F>
 constexpr auto
-operator%(E l, F r) noexcept
+operator%(E l, F r) NOEXCEPT_WITH_THROWING_ASSERTS
 requires same_signedness<E,F> && std::is_unsigned_v<detail_::ULT<E>>
 {
     using result_t=std::conditional_t<sizeof(E)>=sizeof(F),E,F>;
-    assert(r != F{});
+#pragma GCC diagnostic push
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wterminate"
+#endif
+    ps_assert(result_t{}, r != F{} && " division by zero");
+#pragma GCC diagnostic pop
     return static_cast<result_t>(
             static_cast<detail_::ULT<result_t>>(
                     to_uint(l)
@@ -526,7 +559,6 @@ operator%=(E &l, F r) noexcept
 requires same_signedness<E,F> && std::is_unsigned_v<detail_::ULT<E>>
 {
     static_assert(sizeof(E) >= sizeof(F),"dividing by too large integer type");
-    assert(r != F{} && "division by zero");
     l = static_cast<E>(l%r);
     return l;
 }
@@ -598,10 +630,15 @@ requires std::is_unsigned_v<detail_::ULT<E>>
 
 template<a_safeint E, a_safeint F>
 constexpr E
-operator<<(E l, F r) noexcept
+operator<<(E l, F r) NOEXCEPT_WITH_THROWING_ASSERTS
 requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
 {
-    assert(static_cast<size_t>(to_int(r)) < sizeof(E)*CHAR_BIT && "trying to shift by too many bits");
+#pragma GCC diagnostic push
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wterminate"
+#endif
+    ps_assert(E{},static_cast<size_t>(to_int(r)) < sizeof(E)*CHAR_BIT && "trying to shift by too many bits");
+#pragma GCC diagnostic pop
     return static_cast<E>(to_int(l)<<to_int(r));
 }
 template<a_safeint E, a_safeint F>
@@ -609,15 +646,20 @@ constexpr auto&
 operator<<=(E &l, F r) noexcept
 requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
 {
-    l = static_cast<E>(l<<r);
+    l = (l<<r);
     return l;
 }
 template<a_safeint E, a_safeint F>
 constexpr E
-operator>>(E l, F r) noexcept
+operator>>(E l, F r) NOEXCEPT_WITH_THROWING_ASSERTS
 requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
 {
-    assert(static_cast<size_t>(to_int(r)) < sizeof(E)*CHAR_BIT && "trying to shift by too many bits");
+#pragma GCC diagnostic push
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wterminate"
+#endif
+    ps_assert(E{},static_cast<size_t>(to_int(r)) < sizeof(E)*CHAR_BIT && "trying to shift by too many bits");
+#pragma GCC diagnostic pop
     return static_cast<E>(to_int(l)>>to_int(r));
 }
 template<a_safeint E, a_safeint F>
@@ -625,7 +667,7 @@ constexpr auto&
 operator>>=(E &l, F r) noexcept
 requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
 {
-    l = static_cast<E>(l>>r);
+    l = (l>>r);
     return l;
 }
 

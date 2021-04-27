@@ -1,3 +1,8 @@
 /Debug/
 /build/
 /Release/
+/PS_ASSERT_THROWS/
+/NDEBUG is set/
+/clang-Debug/
+/clang-NDEBUG is set/
+/clang-PS_ASSERT_THROWS/
