@@ -9,7 +9,7 @@
 
 A C++20 implementation of safe (wrap around) integers following MISRA C++ rules.
 
-An `#ifdef`ed C++17 implementation is available in branch C++17.
+An `#ifdef`ed C++17 implementation is available in (this) branch C++17.
 
 
 It provides the following types in `namspace psssint` and corresponding UDL operators in `namespace psssint::literals`:

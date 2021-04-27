@@ -6,6 +6,7 @@
 #include "CodeGenBenchmark.h"
 #include <type_traits>
 #include <cstddef>
+#include "TestForZeroReturnAssertWithNDEBUG.h"
 
 
 
@@ -417,6 +418,8 @@ bool runAllTests(int argc, char const *argv[]) {
     auto runner = cute::makeRunner(lis, argc, argv);
     bool success = runner(s, "AllTests");
     success = runner(make_suite_CodeGenBenchmark(),"CodeGenBenchmark") && success;
+    cute::suite TestForZeroReturnAssertWithNDEBUG = make_suite_TestForZeroReturnAssertWithNDEBUG();
+    success &= runner(TestForZeroReturnAssertWithNDEBUG, "TestForZeroReturnAssertWithNDEBUG");
     return success;
 }
 

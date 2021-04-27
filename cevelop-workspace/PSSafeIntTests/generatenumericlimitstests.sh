@@ -20,3 +20,4 @@ done
   echo "static_assert(std::numeric_limits<$safeint>::is_modulo);"
 
 done
+

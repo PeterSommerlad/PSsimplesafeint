@@ -66,4 +66,10 @@
 		<testcase classname="CodeGenBenchmark" name="int64::codegenSumThirdsTest"/>
 		<testcase classname="CodeGenBenchmark" name="int64::codegenSubtractionTest"/>
 	</testsuite>
+	<testsuite name="TestForZeroReturnAssertWithNDEBUG" tests="4">
+		<testcase classname="TestForZeroReturnAssertWithNDEBUG" name="thisIsATestForZeroReturnAssertWithNDEBUGTest"/>
+		<testcase classname="TestForZeroReturnAssertWithNDEBUG" name="ModuloTestForZeroReturnAssertWithNDEBUGTest"/>
+		<testcase classname="TestForZeroReturnAssertWithNDEBUG" name="ShiftLeftTestForZeroReturnAssertWithNDEBUGTest"/>
+		<testcase classname="TestForZeroReturnAssertWithNDEBUG" name="ShiftRightTestForZeroReturnAssertWithNDEBUGTest"/>
+	</testsuite>
 </testsuites>

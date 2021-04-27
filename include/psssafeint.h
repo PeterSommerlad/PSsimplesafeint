@@ -3,13 +3,42 @@
 
 #include <cstdint>
 #include <type_traits>
-#include <cassert>
 #include <iosfwd>
 #include <limits>
 #include <climits>
 #ifdef __cpp_concepts
 #include <concepts> // std::integral
 #endif
+
+
+
+#ifdef NDEBUG
+  #ifdef __cpp_lib_is_constant_evaluated
+    #define ps_assert(default_value, cond) \
+        if (std::is_constant_evaluated()) {\
+           if (not (cond)) throw(#cond); /* compile error */\
+        } else {\
+           if (not (cond) ) return default_value;/* last resort avoid UB */\
+        }
+  # else /* C++17 */
+    #define ps_assert(default_value, cond) \
+        { if (not (cond) ) return default_value;/* last resort avoid UB */ }
+  #endif
+  #define NOEXCEPT_WITH_THROWING_ASSERTS noexcept
+#else
+  #ifdef PS_ASSERT_THROWS
+    #define ps_assert(default_value, cond)  ((cond)?true: throw(#cond))
+    #define NOEXCEPT_WITH_THROWING_ASSERTS noexcept(false)
+
+  #else
+    #include <cassert>
+    #define ps_assert(default_value, cond) assert(cond)
+    #define NOEXCEPT_WITH_THROWING_ASSERTS noexcept
+  #endif
+#endif
+
+
+
 
 namespace psssint { // Peter Sommerlad's simple safe integers
 
@@ -22,7 +51,14 @@ enum class ui64: std::uint64_t{ tag_to_prevent_mixing_other_enums };
 inline namespace literals {
 
 #ifndef __cpp_consteval
+    #ifdef __clang__
+        #pragma clang diagnostic push
+        #pragma clang diagnostic ignored "-Wkeyword-macro"
+    #endif
 #define consteval constexpr
+    #ifdef __clang__
+        #pragma clang diagnostic pop
+    #endif
 #endif
 
 consteval
@@ -220,11 +256,12 @@ template<typename type, std::enable_if_t<psssint::detail_::is_safeint_v<type>,bo
     denorm_min() noexcept
     { return type{std::numeric_limits<ult>::denorm_min()}; }
 
+
     static constexpr bool is_iec559 =  std::numeric_limits<ult>::is_iec559;
     static constexpr bool is_bounded =  std::numeric_limits<ult>::is_bounded;
-    static constexpr bool is_modulo =  true; // always wrap
+    static constexpr bool is_modulo =  true;
 
-    static constexpr bool traps = std::numeric_limits<ult>::traps;
+    static constexpr bool traps = false;
     static constexpr bool tinyness_before =  std::numeric_limits<ult>::tinyness_before;
     static constexpr std::float_round_style round_style =  std::numeric_limits<ult>::round_style;
   };
@@ -661,13 +698,18 @@ std::enable_if_t<
 ,bool> = true>
 #endif
 constexpr auto
-operator/(E l, F r) noexcept
+operator/(E l, F r) NOEXCEPT_WITH_THROWING_ASSERTS
 #ifdef __cpp_concepts
 requires same_signedness<E,F>
 #endif
 {
     using result_t=std::conditional_t<sizeof(E)>=sizeof(F),E,F>;
-    assert(r != F{});
+#pragma GCC diagnostic push
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wterminate"
+#endif
+    ps_assert(result_t{}, r != F{} && " division by zero");
+#pragma GCC diagnostic pop
     return static_cast<result_t>(
             static_cast<detail_::ULT<result_t>>(
                     to_uint(l)
@@ -693,7 +735,6 @@ requires same_signedness<E,F>
 #endif
 {
     static_assert(sizeof(E) >= sizeof(F),"dividing by too large integer type");
-    assert(r != F{} && "division by zero");
     l = static_cast<E>(l/r);
     return l;
 }
@@ -709,13 +750,18 @@ std::enable_if_t<
 ,bool> = true>
 #endif
 constexpr auto
-operator%(E l, F r) noexcept
+operator%(E l, F r) NOEXCEPT_WITH_THROWING_ASSERTS
 #ifdef __cpp_concepts
 requires same_signedness<E,F> && std::is_unsigned_v<detail_::ULT<E>>
 #endif
 {
     using result_t=std::conditional_t<sizeof(E)>=sizeof(F),E,F>;
-    assert(r != F{});
+#pragma GCC diagnostic push
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wterminate"
+#endif
+    ps_assert(result_t{}, r != F{} && " division by zero");
+#pragma GCC diagnostic pop
     return static_cast<result_t>(
             static_cast<detail_::ULT<result_t>>(
                     to_uint(l)
@@ -742,7 +788,6 @@ requires same_signedness<E,F> && std::is_unsigned_v<detail_::ULT<E>>
 #endif
 {
     static_assert(sizeof(E) >= sizeof(F),"dividing by too large integer type");
-    assert(r != F{} && "division by zero");
     l = static_cast<E>(l%r);
     return l;
 }
@@ -906,12 +951,17 @@ std::enable_if_t<
   ,bool> = true>
 #endif
 constexpr E
-operator<<(E l, F r) noexcept
+operator<<(E l, F r) NOEXCEPT_WITH_THROWING_ASSERTS
 #ifdef __cpp_concepts
 requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
 #endif
 {
-    assert(static_cast<size_t>(to_int(r)) < sizeof(E)*CHAR_BIT && "trying to shift by too many bits");
+#pragma GCC diagnostic push
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wterminate"
+#endif
+    ps_assert(E{},static_cast<size_t>(to_int(r)) < sizeof(E)*CHAR_BIT && "trying to shift by too many bits");
+#pragma GCC diagnostic pop
     return static_cast<E>(to_int(l)<<to_int(r));
 }
 #ifdef __cpp_concepts
@@ -931,7 +981,7 @@ operator<<=(E &l, F r) noexcept
 requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
 #endif
 {
-    l = static_cast<E>(l<<r);
+    l = (l<<r);
     return l;
 }
 #ifdef __cpp_concepts
@@ -946,12 +996,17 @@ std::enable_if_t<
   ,bool> = true>
 #endif
 constexpr E
-operator>>(E l, F r) noexcept
+operator>>(E l, F r) NOEXCEPT_WITH_THROWING_ASSERTS
 #ifdef __cpp_concepts
 requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
 #endif
 {
-    assert(static_cast<size_t>(to_int(r)) < sizeof(E)*CHAR_BIT && "trying to shift by too many bits");
+#pragma GCC diagnostic push
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wterminate"
+#endif
+    ps_assert(E{},static_cast<size_t>(to_int(r)) < sizeof(E)*CHAR_BIT && "trying to shift by too many bits");
+#pragma GCC diagnostic pop
     return static_cast<E>(to_int(l)>>to_int(r));
 }
 #ifdef __cpp_concepts
@@ -971,7 +1026,7 @@ operator>>=(E &l, F r) noexcept
 requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
 #endif
 {
-    l = static_cast<E>(l>>r);
+    l = (l>>r);
     return l;
 }
 
