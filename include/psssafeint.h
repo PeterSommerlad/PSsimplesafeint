@@ -246,7 +246,7 @@ template<psssint::a_safeint type>
     static constexpr bool is_bounded =  numeric_limits<ult>::is_bounded;
     static constexpr bool is_modulo =  true;
 
-    static constexpr bool traps = numeric_limits<ult>::traps;
+    static constexpr bool traps = false;
     static constexpr bool tinyness_before =  numeric_limits<ult>::tinyness_before;
     static constexpr float_round_style round_style =  numeric_limits<ult>::round_style;
   };
