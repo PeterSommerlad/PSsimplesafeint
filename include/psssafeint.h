@@ -13,7 +13,7 @@ extern void this_function_is_only_called_because_assertion_failed_at_compiletime
        if (not (cond)) this_function_is_only_called_because_assertion_failed_at_compiletime(#cond); /* compile error */\
 
 #else
-       // throws below produces a warning -Wno_terminate to turn off or pragmas... what to do?
+       // throws below produces a warning -Wno_terminate to turn off or pragmas... what to do? chose to ignore warning false positive
 #endif
 
 #ifdef NDEBUG
@@ -516,7 +516,12 @@ operator/(E l, F r) NOEXCEPT_WITH_THROWING_ASSERTS
 requires same_signedness<E,F>
 {
     using result_t=std::conditional_t<sizeof(E)>=sizeof(F),E,F>;
+#pragma GCC diagnostic push
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wterminate"
+#endif
     ps_assert(result_t{}, r != F{} && " division by zero");
+#pragma GCC diagnostic pop
     return static_cast<result_t>(
             static_cast<detail_::ULT<result_t>>(
                     to_uint(l)
@@ -540,7 +545,12 @@ operator%(E l, F r) NOEXCEPT_WITH_THROWING_ASSERTS
 requires same_signedness<E,F> && std::is_unsigned_v<detail_::ULT<E>>
 {
     using result_t=std::conditional_t<sizeof(E)>=sizeof(F),E,F>;
+#pragma GCC diagnostic push
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wterminate"
+#endif
     ps_assert(result_t{}, r != F{} && " division by zero");
+#pragma GCC diagnostic pop
     return static_cast<result_t>(
             static_cast<detail_::ULT<result_t>>(
                     to_uint(l)
@@ -629,7 +639,12 @@ constexpr E
 operator<<(E l, F r) NOEXCEPT_WITH_THROWING_ASSERTS
 requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
 {
+#pragma GCC diagnostic push
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wterminate"
+#endif
     ps_assert(E{},static_cast<size_t>(to_int(r)) < sizeof(E)*CHAR_BIT && "trying to shift by too many bits");
+#pragma GCC diagnostic pop
     return static_cast<E>(to_int(l)<<to_int(r));
 }
 template<a_safeint E, a_safeint F>
@@ -645,7 +660,12 @@ constexpr E
 operator>>(E l, F r) NOEXCEPT_WITH_THROWING_ASSERTS
 requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
 {
+#pragma GCC diagnostic push
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wterminate"
+#endif
     ps_assert(E{},static_cast<size_t>(to_int(r)) < sizeof(E)*CHAR_BIT && "trying to shift by too many bits");
+#pragma GCC diagnostic pop
     return static_cast<E>(to_int(l)>>to_int(r));
 }
 template<a_safeint E, a_safeint F>

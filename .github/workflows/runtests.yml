@@ -27,3 +27,23 @@ jobs:
       - name: Test
         working-directory: ${{github.workspace}}/build
         run: ctest --output-on-failure
+        
+      - name: Configure CMake ndebug
+        working-directory: ${{github.workspace}}/build
+        shell: bash
+        env:
+          CC:   gcc-10
+          CXX:  g++-10
+        run: cmake ${{github.workspace}}/cevelop-workspace/PSSafeIntTests/ -DCMAKE_BUILD_TYPE=
+        
+      - name: Build ndebug
+        working-directory: ${{github.workspace}}/build
+        shell: bash
+        env:
+          CC:   gcc-10
+          CXX:  g++-10
+        run: cmake --build . -- CXX_FLAGS="-std=c++20 -DPS_ASSERT_THROWS -O2"
+        
+      - name: Test ndebug
+        working-directory: ${{github.workspace}}/build
+        run: ctest --output-on-failure
