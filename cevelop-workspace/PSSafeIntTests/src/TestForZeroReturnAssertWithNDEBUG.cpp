@@ -13,14 +13,15 @@ void thisIsATestForZeroReturnAssertWithNDEBUGTest() {
     ASSERT_EQUAL(0_si8,divident/divisor);
     ASSERT_EQUAL(0_si8,divident /= divisor );
 #else
-#ifdef PS_ASSERT_THROWS
+  #ifdef PS_ASSERT_THROWS
     ASSERT_THROWS(divident/divisor, char const *);
-#else
-
+  #else
+    #ifdef PS_TEST_TRAP
     ASSERTM("cannot test trapping without NDEBUG set, change this to true to check for assert() behavior ",false);
     divident/divisor; // Assertion failed: (r != F{} && " division by zero"), function operator/, file ../src/psssafeint.h, line 517.
-#endif
     #endif
+  #endif
+#endif
 
     //constexpr auto should_not_compile = 1_si8 / divisor; in Test.cpp
 }
@@ -35,14 +36,15 @@ void ModuloTestForZeroReturnAssertWithNDEBUGTest() {
     ASSERT_EQUAL(0_ui8,divident % divisor);
     ASSERT_EQUAL(0_ui8,divident %= divisor );
 #else
-#ifdef PS_ASSERT_THROWS
+  #ifdef PS_ASSERT_THROWS
     ASSERT_THROWS(divident % divisor, char const *);
-#else
-
+  #else
+    #ifdef PS_TEST_TRAP
     ASSERTM("cannot test trapping without NDEBUG set, change this to true to check for assert() behavior ",false);
     divident % divisor; // Assertion failed: (r != F{} && " division by zero"), function operator/, file ../src/psssafeint.h, line 517.
-#endif
     #endif
+  #endif
+#endif
 
     //constexpr auto should_not_compile = 1_ui8 % divisor; in Test.cpp
 }
@@ -55,14 +57,16 @@ void ShiftLeftTestForZeroReturnAssertWithNDEBUGTest() {
     ASSERT_EQUAL(0_ui8,toshift << shiftby);
     ASSERT_EQUAL(0_ui8,toshift <<= shiftby );
 #else
-#ifdef PS_ASSERT_THROWS
+  #ifdef PS_ASSERT_THROWS
     ASSERT_THROWS(toshift << shiftby, char const *);
-#else
+  #else
+    #ifdef PS_TEST_TRAP
 
     ASSERTM("cannot test trapping without NDEBUG set, change this to true to check for assert() behavior ",false);
     toshift << shiftby; // Assertion failed: (r != F{} && " division by zero"), function operator/, file ../src/psssafeint.h, line 517.
-#endif
     #endif
+  #endif
+#endif
 
      //constexpr auto should_not_compile = 1_ui8 << shiftby; in Test.cpp
 }
@@ -77,12 +81,13 @@ void ShiftRightTestForZeroReturnAssertWithNDEBUGTest() {
 #ifdef PS_ASSERT_THROWS
     ASSERT_THROWS(toshift >> shiftby, char const *);
 #else
+    #ifdef PS_TEST_TRAP
 
     ASSERTM("cannot test trapping without NDEBUG set, change this to true to check for assert() behavior ",false);
     toshift >> shiftby; // Assertion failed: (r != F{} && " division by zero"), function operator/, file ../src/psssafeint.h, line 517.
-#endif
     #endif
-
+  #endif
+#endif
      //constexpr auto should_not_compile = 1_ui8 >> shiftby; in Test.cpp
 }
 

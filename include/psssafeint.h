@@ -8,13 +8,18 @@
 #include <climits>
 #include <concepts> // std::integral
 
+#if 0 // todo: this works with NDEBUG, but causes a linker error if no optimization:
+extern void this_function_is_only_called_because_assertion_failed_at_compiletime(char const *);\
+       if (not (cond)) this_function_is_only_called_because_assertion_failed_at_compiletime(#cond); /* compile error */\
 
+#else
+       // throws below produces a warning -Wno_terminate to turn off or pragmas... what to do?
+#endif
 
 #ifdef NDEBUG
   #define ps_assert(default_value, cond) \
     if (std::is_constant_evaluated()) {\
-        extern void this_function_is_only_called_because_assertion_failed_at_compiletime(char const *);\
-       if (not (cond)) this_function_is_only_called_because_assertion_failed_at_compiletime(#cond); /* compile error */\
+       if (not (cond)) throw(#cond); /* compile error */\
     } else {\
        if (not (cond) ) return default_value;/* last resort avoid UB */\
     }

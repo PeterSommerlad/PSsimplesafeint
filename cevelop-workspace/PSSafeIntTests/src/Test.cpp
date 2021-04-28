@@ -32,7 +32,7 @@ namespace concat_line(NOT##_test, __LINE__) { \
 template<typename T> \
 constexpr bool \
 expression_compiles<T, consume_value<(T{} oper T{})> > = true;\
-    static_assert(NOT expression_compiles<FROM>, "should not compile: " #oper);\
+static_assert(NOT expression_compiles<FROM>, "should " #NOT " compile: " #FROM "{}" #oper #FROM "{}");\
 } // namespace tag
 
 

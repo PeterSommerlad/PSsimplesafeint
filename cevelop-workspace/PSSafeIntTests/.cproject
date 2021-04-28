@@ -209,7 +209,7 @@
                             							
                             <tool command="g++" id="cdt.managedbuild.tool.gnu.cpp.compiler.macosx.exe.release.1174509067" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.macosx.exe.release">
                                 								
-                                <option id="gnu.cpp.compiler.macosx.exe.release.option.optimization.level.299337538" name="Optimization Level" superClass="gnu.cpp.compiler.macosx.exe.release.option.optimization.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.optimization.level.most" valueType="enumerated"/>
+                                <option id="gnu.cpp.compiler.macosx.exe.release.option.optimization.level.299337538" name="Optimization Level" superClass="gnu.cpp.compiler.macosx.exe.release.option.optimization.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
                                 								
                                 <option defaultValue="gnu.cpp.compiler.debugging.level.none" id="gnu.cpp.compiler.macosx.exe.release.option.debugging.level.1601136495" name="Debug Level" superClass="gnu.cpp.compiler.macosx.exe.release.option.debugging.level" useByScannerDiscovery="false" valueType="enumerated"/>
                                 								
@@ -599,7 +599,7 @@
                             							
                             <tool command="clang++" id="cdt.managedbuild.tool.macosx.cpp.linker.macosx.exe.release.1046734363" name="MacOS X C++ Linker" superClass="cdt.managedbuild.tool.macosx.cpp.linker.macosx.exe.release">
                                 								
-                                <option id="macosx.cpp.link.option.flags.1463611433" superClass="macosx.cpp.link.option.flags" useByScannerDiscovery="false" value="-L/usr/local/opt/llvm/lib -Wl,-rpath,/usr/local/opt/llvm/lib" valueType="string"/>
+                                <option id="macosx.cpp.link.option.flags.1463611433" name="Linker flags" superClass="macosx.cpp.link.option.flags" useByScannerDiscovery="false" value="-L/usr/local/opt/llvm/lib -Wl,-rpath,/usr/local/opt/llvm/lib" valueType="string"/>
                                 								
                                 <inputType id="cdt.managedbuild.tool.macosx.cpp.linker.input.1470625907" superClass="cdt.managedbuild.tool.macosx.cpp.linker.input">
                                     									
