@@ -24,8 +24,48 @@ jobs:
         env:
           CC:   gcc-10
           CXX:  g++-10
-        run: cmake --build . -- CXX_FLAGS="-std=c++17 -DPS_ASSERT_TRHOWS -O2"
+        run: cmake --build . -- CXX_FLAGS="-std=c++17 -DPS_ASSERT_THROWS -O2"
         
       - name: Test
+        working-directory: ${{github.workspace}}/build
+        run: ctest --output-on-failure
+        
+      - name: Configure CMake ndebug
+        working-directory: ${{github.workspace}}/build
+        shell: bash
+        env:
+          CC:   gcc-10
+          CXX:  g++-10
+        run: cmake ${{github.workspace}}/cevelop-workspace/PSSafeIntTests/ -DCMAKE_BUILD_TYPE=Release
+        
+      - name: Build ndebug
+        working-directory: ${{github.workspace}}/build
+        shell: bash
+        env:
+          CC:   gcc-10
+          CXX:  g++-10
+        run: cmake --build . -- CXX_FLAGS="-std=c++17 -DPS_ASSERT_THROWS -O2"
+        
+      - name: Test ndebug
+        working-directory: ${{github.workspace}}/build
+        run: ctest --output-on-failure
+      
+      - name: Configure CMake throw
+        working-directory: ${{github.workspace}}/build
+        shell: bash
+        env:
+          CC:   gcc-10
+          CXX:  g++-10
+        run: cmake ${{github.workspace}}/cevelop-workspace/PSSafeIntTests/ -DCMAKE_BUILD_TYPE=Throw
+        
+      - name: Build throw
+        working-directory: ${{github.workspace}}/build
+        shell: bash
+        env:
+          CC:   gcc-10
+          CXX:  g++-10
+        run: cmake --build . -- CXX_FLAGS="-std=c++17 -DPS_ASSERT_THROWS -O2"
+        
+      - name: Test throw
         working-directory: ${{github.workspace}}/build
         run: ctest --output-on-failure

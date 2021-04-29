@@ -40,3 +40,4 @@ Debug
 *Test.xml
 .*.html
 *.asm
+build/
