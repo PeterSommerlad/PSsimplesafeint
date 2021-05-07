@@ -66,10 +66,12 @@
 		<testcase classname="CodeGenBenchmark" name="int64::codegenSumThirdsTest"/>
 		<testcase classname="CodeGenBenchmark" name="int64::codegenSubtractionTest"/>
 	</testsuite>
-	<testsuite name="TestForZeroReturnAssertWithNDEBUG" tests="4">
+	<testsuite name="TestForZeroReturnAssertWithNDEBUG" tests="6">
 		<testcase classname="TestForZeroReturnAssertWithNDEBUG" name="thisIsATestForZeroReturnAssertWithNDEBUGTest"/>
 		<testcase classname="TestForZeroReturnAssertWithNDEBUG" name="ModuloTestForZeroReturnAssertWithNDEBUGTest"/>
 		<testcase classname="TestForZeroReturnAssertWithNDEBUG" name="ShiftLeftTestForZeroReturnAssertWithNDEBUGTest"/>
 		<testcase classname="TestForZeroReturnAssertWithNDEBUG" name="ShiftRightTestForZeroReturnAssertWithNDEBUGTest"/>
+		<testcase classname="TestForZeroReturnAssertWithNDEBUG" name="cppnowtalk::testUBforint"/>
+		<testcase classname="TestForZeroReturnAssertWithNDEBUG" name="cppnowtalk::testNoUBforunsigned"/>
 	</testsuite>
 </testsuites>

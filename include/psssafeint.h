@@ -437,7 +437,7 @@ std::enable_if_t<detail_::is_safeint_v<TO>,bool> = false
 #endif
 constexpr
 auto
-from_int_to(FROM val)
+from_int_to(FROM val) NOEXCEPT_WITH_THROWING_ASSERTS
 #ifdef __cpp_concepts
 -> TO
 #else
@@ -447,20 +447,14 @@ from_int_to(FROM val)
     using result_t = TO;
     using ultr = std::underlying_type_t<result_t>;
     if constexpr(std::is_unsigned_v<ultr>){
-        if (val <= std::numeric_limits<ultr>::max()) {
+        ps_assert( result_t{}, (val >= FROM{} &&
+                                val <= std::numeric_limits<ultr>::max())) ;
             return static_cast<result_t>(val);
-        } else {
-            throw "integral constant too large";
-        }
     } else {
-        if (val <= std::numeric_limits<ultr>::max() &&
-            val >= std::numeric_limits<ultr>::min()) {
+        ps_assert( result_t{}, (val <= std::numeric_limits<ultr>::max() &&
+                                val >= std::numeric_limits<ultr>::min()));
             return static_cast<result_t>(val);
-        } else {
-            throw "integral constant out of range";
-        }
     }
-
 }
 
 
