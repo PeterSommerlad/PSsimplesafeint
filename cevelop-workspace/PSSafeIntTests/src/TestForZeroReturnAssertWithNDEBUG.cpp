@@ -20,9 +20,9 @@ void thisIsATestForZeroReturnAssertWithNDEBUGTest() {
     ASSERTM("cannot test trapping without NDEBUG set, change this to true to check for assert() behavior ",false);
     divident/divisor; // Assertion failed: (r != F{} && " division by zero"), function operator/, file ../src/psssafeint.h, line 517.
     #endif
+    ASSERT(divident != divisor); // dummy to prevent compile warning
   #endif
 #endif
-
     //constexpr auto should_not_compile = 1_si8 / divisor; in Test.cpp
 }
 
@@ -43,6 +43,7 @@ void ModuloTestForZeroReturnAssertWithNDEBUGTest() {
     ASSERTM("cannot test trapping without NDEBUG set, change this to true to check for assert() behavior ",false);
     divident % divisor; // Assertion failed: (r != F{} && " division by zero"), function operator/, file ../src/psssafeint.h, line 517.
     #endif
+    ASSERT(divident != divisor); // dummy to prevent compile warning
   #endif
 #endif
 
@@ -67,6 +68,7 @@ void ShiftLeftTestForZeroReturnAssertWithNDEBUGTest() {
     #endif
   #endif
 #endif
+    ASSERT(shiftby != toshift); // dummy to prevent compile warning
 
      //constexpr auto should_not_compile = 1_ui8 << shiftby; in Test.cpp
 }
@@ -88,6 +90,7 @@ void ShiftRightTestForZeroReturnAssertWithNDEBUGTest() {
     #endif
   #endif
 #endif
+    ASSERT(shiftby != toshift); // dummy to prevent compile warning
      //constexpr auto should_not_compile = 1_ui8 >> shiftby; in Test.cpp
 }
 

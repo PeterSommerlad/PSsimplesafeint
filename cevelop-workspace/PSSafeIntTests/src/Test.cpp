@@ -16,9 +16,9 @@ namespace _testing {
 
 namespace compile_checks {
 using namespace psssint;
-
-template<auto value>
+template<auto ...value>
 using consume_value = void;
+
 
 
 #define concat_line_impl(A, B) A##_##B
@@ -41,10 +41,10 @@ check_does_compile(not,  si8 , <<  )
 check_does_compile(   ,  ui8 , << )
 check_does_compile(not,  si8 , >>  )
 check_does_compile(   ,  ui8 , >> )
-check_does_compile(not,  ui8 , + (1_ui8 << 10_ui8) + ) // too wide shift
-check_does_compile(   ,  ui8 , + (1_ui8 << 7_ui8) + ) // too wide shift
-check_does_compile(not,  ui8 , + (0x80_ui8 >> 10_ui8) + ) // too wide shift
-check_does_compile(   ,  ui8 , + (0x80_ui8 >> 7_ui8) + ) // too wide shift
+check_does_compile(not,  ui8 , + (1_ui8 << 010_ui8) + ) // too wide shift
+check_does_compile(   ,  ui8 , + (1_ui8 << 7_ui8) + ) // not too wide shift
+check_does_compile(not,  ui8 , + (0x80_ui8 >> 010_ui8) + ) // too wide shift
+check_does_compile(   ,  ui8 , + (0x80_ui8 >> 7_ui8) + ) // not too wide shift
 check_does_compile(not,  ui8 ,  % ) // modulo 0
 check_does_compile(not,  si8 ,  / ) // div 0
 check_does_compile(not,  si8 ,  % ) // modulo not working
@@ -119,6 +119,7 @@ static_assert(detail_::is_safeint_v<si64>);
 enum class enum4test{};
 static_assert(!detail_::is_safeint_v<enum4test>);
 static_assert(!detail_::is_safeint_v<std::byte>);
+static_assert(!detail_::is_safeint_v<int>);
 static_assert(std::is_same_v<unsigned,decltype(to_int(1_ui8)+1)>);
 static_assert(std::is_same_v<unsigned,decltype(to_int(2_ui16)+1)>);
 static_assert(std::is_same_v<int,decltype(to_int(1_si8))>);
@@ -148,6 +149,7 @@ static_assert(42_si8 == from_int_to<si8>(42));
 //static_assert(32_ui8 == from_int(U' ')); // does not compile
 //static_assert(32_ui8 == from_int(L' ')); // does not compile
 //static_assert(1_ui8 == from_int_to<ui8>(true)); // does not compile
+
 
 template<typename T, typename WHAT>
 constexpr bool
@@ -409,10 +411,49 @@ void ui8OutputAsInteger(){
 
 void checkedFromInt(){
     using namespace psssint;
+#ifdef NDEBUG
+    ASSERT_EQUAL(0_ui8,from_int_to<ui8>(2400u));
+#else
+  #ifdef PS_ASSERT_THROWS
     ASSERT_THROWS(from_int_to<ui8>(2400u), char const *);
+  #else
+    #ifdef PS_TEST_TRAP
+    ASSERTM("cannot test trapping without NDEBUG set, change this to true to check for assert() behavior ",false);
+    ASSERT_EQUAL(0,from_int_to<ui8>(2400u)); // assert()
+    #endif
+  #endif
+#endif
+
 }
 
+namespace cppnowtalk{
 
+void testUBforint() {
+    std::ostringstream out{};
+    out << 65535 * 32768 << '\n';
+    // prints: 2147450880
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Woverflow"
+    out << 65536 * 32768 << '\n';
+    //../src/Test.cpp:421:18: error: integer overflow in expression of type 'int' results in '-2147483648' [-Werror=overflow]
+#pragma GCC diagnostic pop
+    // prints: ?
+    out << std::boolalpha << std::numeric_limits<int>::is_modulo << '\n';
+    ASSERT_EQUAL("2147450880\n-2147483648\nfalse\n",out.str());
+}
+void testNoUBforunsigned() {
+    std::ostringstream out{};
+    out << 65535u * 32768u << '\n';
+    // prints: 2147450880
+    out << 65536u * 32768u << '\n';
+    // prints: 2147483648
+
+    out << 65536u * 32768u * 2u << '\n';
+    // prints: ?
+    out << std::boolalpha << std::numeric_limits<unsigned>::is_modulo << '\n';
+    ASSERT_EQUAL("2147450880\n2147483648\n0\ntrue\n",out.str());
+}
+}
 
 bool runAllTests(int argc, char const *argv[]) {
     cute::suite s { };
@@ -464,6 +505,8 @@ bool runAllTests(int argc, char const *argv[]) {
     bool success = runner(s, "AllTests");
     success = runner(make_suite_CodeGenBenchmark(),"CodeGenBenchmark") && success;
     cute::suite TestForZeroReturnAssertWithNDEBUG = make_suite_TestForZeroReturnAssertWithNDEBUG();
+	TestForZeroReturnAssertWithNDEBUG.push_back(CUTE(cppnowtalk::testUBforint));
+	TestForZeroReturnAssertWithNDEBUG.push_back(CUTE(cppnowtalk::testNoUBforunsigned));
     success &= runner(TestForZeroReturnAssertWithNDEBUG, "TestForZeroReturnAssertWithNDEBUG");
     return success;
 }

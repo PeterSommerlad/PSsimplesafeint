@@ -19,9 +19,9 @@ extern void this_function_is_only_called_because_assertion_failed_at_compiletime
 #ifdef NDEBUG
   #define ps_assert(default_value, cond) \
     if (std::is_constant_evaluated()) {\
-       if (not (cond)) throw(#cond); /* compile error */\
+       if (not (cond)) throw(#cond); /* compile error, but also gcc -Wterminate */\
     } else {\
-       if (not (cond) ) return default_value;/* last resort avoid UB */\
+       if (not (cond) ) return (default_value);/* last resort avoid UB */\
     }
   #define NOEXCEPT_WITH_THROWING_ASSERTS noexcept
 #else
@@ -91,9 +91,9 @@ ui64 operator""_ui64(unsigned long long val) {
 }
 // signed
 enum class si8 : std::int8_t { tag_to_prevent_mixing_other_enums };
-enum class si16: std::int16_t{tag_to_prevent_mixing_other_enums};
-enum class si32: std::int32_t{tag_to_prevent_mixing_other_enums};
-enum class si64: std::int64_t{tag_to_prevent_mixing_other_enums};
+enum class si16: std::int16_t{ tag_to_prevent_mixing_other_enums };
+enum class si32: std::int32_t{ tag_to_prevent_mixing_other_enums };
+enum class si64: std::int64_t{ tag_to_prevent_mixing_other_enums };
 
 inline namespace literals {
 consteval
@@ -331,7 +331,7 @@ to_uint(E val) noexcept
 }
 
 
-// deliberately not std::integral, because of bool!
+// deliberately not std::integral, because of bool and characters!
 
 template<typename T>
 concept an_integer = detail_::is_known_integer_v<T>;
@@ -339,7 +339,7 @@ concept an_integer = detail_::is_known_integer_v<T>;
 
 template<an_integer T>
 constexpr auto
-from_int(T val) {
+from_int(T val) noexcept {
     using detail_::is_similar_v;
     using std::conditional_t;
     struct cannot_convert_integer{};
@@ -357,24 +357,28 @@ from_int(T val) {
 template<a_safeint TO, an_integer FROM>
 constexpr 
 auto
-from_int_to(FROM val) 
+from_int_to(FROM val) NOEXCEPT_WITH_THROWING_ASSERTS
 {
+#ifdef NDEBUG
+#pragma GCC diagnostic push
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wterminate"
+#endif
+#endif
     using result_t = TO;
     using ultr = std::underlying_type_t<result_t>;
     if constexpr(std::is_unsigned_v<ultr>){
-        if (val <= std::numeric_limits<ultr>::max()) {
-            return static_cast<result_t>(val);
-        } else {
-            throw "integral constant too large";
-        }
+        ps_assert( result_t{}, (val >= FROM{} &&
+                                val <= std::numeric_limits<ultr>::max())) ;
+        return static_cast<result_t>(val);
     } else {
-        if (val <= std::numeric_limits<ultr>::max() &&
-            val >= std::numeric_limits<ultr>::min()) {
-            return static_cast<result_t>(val);
-        } else {
-            throw "integral constant out of range";
-        }
+        ps_assert( result_t{}, (val <= std::numeric_limits<ultr>::max() &&
+                                val >= std::numeric_limits<ultr>::min()));
+        return static_cast<result_t>(val);
     }
+#ifdef NDEBUG
+#pragma GCC diagnostic pop
+#endif
 
 }
 
@@ -678,13 +682,14 @@ requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<
 }
 
 
-template<a_safeint E>
-std::ostream& operator<<(std::ostream &out, E value){
+//template<a_safeint E>
+std::ostream& operator<<(std::ostream &out, a_safeint auto value){
     out << to_int(value);
     return out;
 }
 
 }
 
+#undef ps_assert
 
 #endif /* SRC_PSSSAFEINT_ */
