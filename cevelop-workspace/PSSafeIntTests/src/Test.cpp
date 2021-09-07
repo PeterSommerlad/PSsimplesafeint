@@ -12,6 +12,8 @@
 
 using namespace psssint::literals;
 
+static_assert(0x8000_ui16 == 32768_ui16);
+
 namespace _testing {
 
 namespace compile_checks {
@@ -28,10 +30,10 @@ using consume_value = void;
 namespace concat_line(NOT##_test, __LINE__) { \
         template<typename T, typename=void>\
         constexpr bool\
-        expression_compiles=false;\
+        expression_compiles{false};\
 template<typename T> \
 constexpr bool \
-expression_compiles<T, consume_value<(T{} oper T{})> > = true;\
+expression_compiles<T, consume_value<(T{} oper T{})> > {true};\
 static_assert(NOT expression_compiles<FROM>, "should " #NOT " compile: " #FROM "{}" #oper #FROM "{}");\
 } // namespace tag
 
@@ -51,8 +53,8 @@ check_does_compile(not,  si8 ,  % ) // modulo not working
 check_does_compile(not,  ui8 ,  / ) // div 0
 check_does_compile(   ,  ui8 , +( 1_ui8  / 1_ui8)+ ) // div
 check_does_compile(   ,  ui8 , +( 11_ui8  % 3_ui8)+ ) // mod
-check_does_compile(not,  ui8 , + 1_si8 + ) // mod
-check_does_compile(   ,  ui8 , + 255_ui8 + 1_ui8 + ) // mod
+check_does_compile(not,  ui8 , + 1_si8 + ) // mixed
+check_does_compile(   ,  ui8 , + 255_ui8 + 1_ui8 + ) // wrap
 
 }
 #undef check_does_compile
@@ -150,6 +152,390 @@ static_assert(42_si8 == from_int_to<si8>(42));
 //static_assert(32_ui8 == from_int(L' ')); // does not compile
 //static_assert(1_ui8 == from_int_to<ui8>(true)); // does not compile
 
+// Test case from Frank Buergel (extended):
+// missing sign extension from 32 to 64bit
+// discovered further bugs wrt signed division
+namespace {
+constexpr auto v1_64 {  1_si64 };
+constexpr auto v1_32 {  1_si32 };
+constexpr auto v1_16 {  1_si16 };
+constexpr auto v1_8  {  1_si8 };
+constexpr auto v2_64 {  2_si64 };
+constexpr auto v2_32 {  2_si32 };
+constexpr auto v2_16 {  2_si16 };
+constexpr auto v2_8  {  2_si8 };
+constexpr auto vminus1_64 { -1_si64 };
+constexpr auto vminus1_32 { -1_si32 };
+constexpr auto vminus1_16 { -1_si16 };
+constexpr auto vminus1_8  { -1_si8 };
+
+constexpr auto min_8  { std::numeric_limits<si8 >::min() };
+constexpr auto min_16 { std::numeric_limits<si16>::min() };
+constexpr auto min_32 { std::numeric_limits<si32>::min() };
+constexpr auto min_64 { std::numeric_limits<si64>::min() };
+constexpr auto max_8  { std::numeric_limits<si8 >::max() };
+constexpr auto max_16 { std::numeric_limits<si16>::max() };
+constexpr auto max_32 { std::numeric_limits<si32>::max() };
+constexpr auto max_64 { std::numeric_limits<si64>::max() };
+
+}
+
+static_assert(v1_64 + vminus1_64 == 0_si64 );
+static_assert(v1_64 + vminus1_32 == 0_si64 );
+static_assert(v1_64 + vminus1_16 == 0_si64 );
+static_assert(v1_64 + vminus1_8  == 0_si64 );
+static_assert(v1_32 + vminus1_64 == 0_si64 );
+static_assert(v1_32 + vminus1_32 == 0_si32 );
+static_assert(v1_32 + vminus1_16 == 0_si32 );
+static_assert(v1_32 + vminus1_8  == 0_si32 );
+static_assert(v1_16 + vminus1_64 == 0_si64 );
+static_assert(v1_16 + vminus1_32 == 0_si32 );
+static_assert(v1_16 + vminus1_16 == 0_si16 );
+static_assert(v1_16 + vminus1_8  == 0_si16 );
+static_assert(v1_8  + vminus1_64 == 0_si64 );
+static_assert(v1_8  + vminus1_32 == 0_si32 );
+static_assert(v1_8  + vminus1_16 == 0_si16 );
+static_assert(v1_8  + vminus1_8  == 0_si8 );
+
+static_assert(vminus1_64 +  v1_64== 0_si64 );
+static_assert(vminus1_32 +  v1_64== 0_si64 );
+static_assert(vminus1_16 +  v1_64== 0_si64 );
+static_assert(vminus1_8  +  v1_64== 0_si64 );
+static_assert(vminus1_64 +  v1_32== 0_si64 );
+static_assert(vminus1_32 +  v1_32== 0_si32 );
+static_assert(vminus1_16 +  v1_32== 0_si32 );
+static_assert(vminus1_8  +  v1_32== 0_si32 );
+static_assert(vminus1_64 +  v1_16== 0_si64 );
+static_assert(vminus1_32 +  v1_16== 0_si32 );
+static_assert(vminus1_16 +  v1_16== 0_si16 );
+static_assert(vminus1_8  +  v1_16== 0_si16 );
+static_assert(vminus1_64 +  v1_8 == 0_si64 );
+static_assert(vminus1_32 +  v1_8 == 0_si32 );
+static_assert(vminus1_16 +  v1_8 == 0_si16 );
+static_assert(vminus1_8  +  v1_8 == 0_si8 );
+
+
+// demonstrate wrapping:
+static_assert(max_64 + v1_64 == min_64 );
+static_assert(max_64 + v1_32 == min_64 );
+static_assert(max_64 + v1_16 == min_64 );
+static_assert(max_64 + v1_8  == min_64 );
+static_assert(max_32 + v1_64 == 0x8000'0000_si64 );
+static_assert(max_32 + v1_32 == min_32 );
+static_assert(max_32 + v1_16 == min_32 );
+static_assert(max_32 + v1_8  == min_32 );
+static_assert(max_16 + v1_64 == 0x8000_si64 );
+static_assert(max_16 + v1_32 == 0x8000_si32 );
+static_assert(max_16 + v1_16 == min_16 );
+static_assert(max_16 + v1_8  == min_16 );
+static_assert(max_8  + v1_64 == 128_si64 );
+static_assert(max_8  + v1_32 == 128_si32 );
+static_assert(max_8  + v1_16 == 128_si16 );
+static_assert(max_8  + v1_8  == min_8 );
+
+
+static_assert(v1_64 - vminus1_64 == 2_si64 );
+static_assert(v1_64 - vminus1_32 == 2_si64 );
+static_assert(v1_64 - vminus1_16 == 2_si64 );
+static_assert(v1_64 - vminus1_8  == 2_si64 );
+static_assert(v1_32 - vminus1_64 == 2_si64 );
+static_assert(v1_32 - vminus1_32 == 2_si32 );
+static_assert(v1_32 - vminus1_16 == 2_si32 );
+static_assert(v1_32 - vminus1_8  == 2_si32 );
+static_assert(v1_16 - vminus1_64 == 2_si64 );
+static_assert(v1_16 - vminus1_32 == 2_si32 );
+static_assert(v1_16 - vminus1_16 == 2_si16 );
+static_assert(v1_16 - vminus1_8  == 2_si16 );
+static_assert(v1_8  - vminus1_64 == 2_si64 );
+static_assert(v1_8  - vminus1_32 == 2_si32 );
+static_assert(v1_8  - vminus1_16 == 2_si16 );
+static_assert(v1_8  - vminus1_8  == 2_si8 );
+
+
+static_assert(vminus1_64 - v1_64  == -2_si64 );
+static_assert(vminus1_32 - v1_64  == -2_si64 );
+static_assert(vminus1_16 - v1_64  == -2_si64 );
+static_assert(vminus1_8  - v1_64  == -2_si64 );
+static_assert(vminus1_64 - v1_32  == -2_si64 );
+static_assert(vminus1_32 - v1_32  == -2_si32 );
+static_assert(vminus1_16 - v1_32  == -2_si32 );
+static_assert(vminus1_8  - v1_32  == -2_si32 );
+static_assert(vminus1_64 - v1_16  == -2_si64 );
+static_assert(vminus1_32 - v1_16  == -2_si32 );
+static_assert(vminus1_16 - v1_16  == -2_si16 );
+static_assert(vminus1_8  - v1_16  == -2_si16 );
+static_assert(vminus1_64 - v1_8   == -2_si64 );
+static_assert(vminus1_32 - v1_8   == -2_si32 );
+static_assert(vminus1_16 - v1_8   == -2_si16 );
+static_assert(vminus1_8  - v1_8   == -2_si8 );
+
+static_assert(v1_64 * vminus1_64 == -1_si64 );
+static_assert(v1_64 * vminus1_32 == -1_si64 );
+static_assert(v1_64 * vminus1_16 == -1_si64 );
+static_assert(v1_64 * vminus1_8  == -1_si64 );
+static_assert(v1_32 * vminus1_64 == -1_si64 );
+static_assert(v1_32 * vminus1_32 == -1_si32 );
+static_assert(v1_32 * vminus1_16 == -1_si32 );
+static_assert(v1_32 * vminus1_8  == -1_si32 );
+static_assert(v1_16 * vminus1_64 == -1_si64 );
+static_assert(v1_16 * vminus1_32 == -1_si32 );
+static_assert(v1_16 * vminus1_16 == -1_si16 );
+static_assert(v1_16 * vminus1_8  == -1_si16 );
+static_assert(v1_8  * vminus1_64 == -1_si64 );
+static_assert(v1_8  * vminus1_32 == -1_si32 );
+static_assert(v1_8  * vminus1_16 == -1_si16 );
+static_assert(v1_8  * vminus1_8  == -1_si8 );
+
+static_assert(vminus1_64 *  v1_64== -1_si64 );
+static_assert(vminus1_32 *  v1_64== -1_si64 );
+static_assert(vminus1_16 *  v1_64== -1_si64 );
+static_assert(vminus1_8  *  v1_64== -1_si64 );
+static_assert(vminus1_64 *  v1_32== -1_si64 );
+static_assert(vminus1_32 *  v1_32== -1_si32 );
+static_assert(vminus1_16 *  v1_32== -1_si32 );
+static_assert(vminus1_8  *  v1_32== -1_si32 );
+static_assert(vminus1_64 *  v1_16== -1_si64 );
+static_assert(vminus1_32 *  v1_16== -1_si32 );
+static_assert(vminus1_16 *  v1_16== -1_si16 );
+static_assert(vminus1_8  *  v1_16== -1_si16 );
+static_assert(vminus1_64 *  v1_8 == -1_si64 );
+static_assert(vminus1_32 *  v1_8 == -1_si32 );
+static_assert(vminus1_16 *  v1_8 == -1_si16 );
+static_assert(vminus1_8  *  v1_8 == -1_si8 );
+
+static_assert(vminus1_64 *  v2_64== -2_si64 );
+static_assert(vminus1_32 *  v2_64== -2_si64 );
+static_assert(vminus1_16 *  v2_64== -2_si64 );
+static_assert(vminus1_8  *  v2_64== -2_si64 );
+static_assert(vminus1_64 *  v2_32== -2_si64 );
+static_assert(vminus1_32 *  v2_32== -2_si32 );
+static_assert(vminus1_16 *  v2_32== -2_si32 );
+static_assert(vminus1_8  *  v2_32== -2_si32 );
+static_assert(vminus1_64 *  v2_16== -2_si64 );
+static_assert(vminus1_32 *  v2_16== -2_si32 );
+static_assert(vminus1_16 *  v2_16== -2_si16 );
+static_assert(vminus1_8  *  v2_16== -2_si16 );
+static_assert(vminus1_64 *  v2_8 == -2_si64 );
+static_assert(vminus1_32 *  v2_8 == -2_si32 );
+static_assert(vminus1_16 *  v2_8 == -2_si16 );
+static_assert(vminus1_8  *  v2_8 == -2_si8 );
+
+static_assert(vminus1_64 * -v2_64==  2_si64 );
+static_assert(vminus1_32 * -v2_64==  2_si64 );
+static_assert(vminus1_16 * -v2_64==  2_si64 );
+static_assert(vminus1_8  * -v2_64==  2_si64 );
+static_assert(vminus1_64 * -v2_32==  2_si64 );
+static_assert(vminus1_32 * -v2_32==  2_si32 );
+static_assert(vminus1_16 * -v2_32==  2_si32 );
+static_assert(vminus1_8  * -v2_32==  2_si32 );
+static_assert(vminus1_64 * -v2_16==  2_si64 );
+static_assert(vminus1_32 * -v2_16==  2_si32 );
+static_assert(vminus1_16 * -v2_16==  2_si16 );
+static_assert(vminus1_8  * -v2_16==  2_si16 );
+static_assert(vminus1_64 * -v2_8 ==  2_si64 );
+static_assert(vminus1_32 * -v2_8 ==  2_si32 );
+static_assert(vminus1_16 * -v2_8 ==  2_si16 );
+static_assert(vminus1_8  * -v2_8 ==  2_si8 );
+
+static_assert(v2_64 * -v2_64== -4_si64 );
+static_assert(v2_32 * -v2_64== -4_si64 );
+static_assert(v2_16 * -v2_64== -4_si64 );
+static_assert(v2_8  * -v2_64== -4_si64 );
+static_assert(v2_64 * -v2_32== -4_si64 );
+static_assert(v2_32 * -v2_32== -4_si32 );
+static_assert(v2_16 * -v2_32== -4_si32 );
+static_assert(v2_8  * -v2_32== -4_si32 );
+static_assert(v2_64 * -v2_16== -4_si64 );
+static_assert(v2_32 * -v2_16== -4_si32 );
+static_assert(v2_16 * -v2_16== -4_si16 );
+static_assert(v2_8  * -v2_16== -4_si16 );
+static_assert(v2_64 * -v2_8 == -4_si64 );
+static_assert(v2_32 * -v2_8 == -4_si32 );
+static_assert(v2_16 * -v2_8 == -4_si16 );
+static_assert(v2_8  * -v2_8 == -4_si8 );
+
+static_assert(-v2_64 * -v2_64== 4_si64 );
+static_assert(-v2_32 * -v2_64== 4_si64 );
+static_assert(-v2_16 * -v2_64== 4_si64 );
+static_assert(-v2_8  * -v2_64== 4_si64 );
+static_assert(-v2_64 * -v2_32== 4_si64 );
+static_assert(-v2_32 * -v2_32== 4_si32 );
+static_assert(-v2_16 * -v2_32== 4_si32 );
+static_assert(-v2_8  * -v2_32== 4_si32 );
+static_assert(-v2_64 * -v2_16== 4_si64 );
+static_assert(-v2_32 * -v2_16== 4_si32 );
+static_assert(-v2_16 * -v2_16== 4_si16 );
+static_assert(-v2_8  * -v2_16== 4_si16 );
+static_assert(-v2_64 * -v2_8 == 4_si64 );
+static_assert(-v2_32 * -v2_8 == 4_si32 );
+static_assert(-v2_16 * -v2_8 == 4_si16 );
+static_assert(-v2_8  * -v2_8 == 4_si8 );
+
+// demonstrate wrapping:
+static_assert(min_64 * v2_64 == 0_si64 );
+static_assert(min_64 * v2_32 == 0_si64  );
+static_assert(min_64 * v2_16 == 0_si64  );
+static_assert(min_64 * v2_8  == 0_si64 );
+static_assert(min_32 * v2_64 == -0x1'0000'0000_si64 );
+static_assert(min_32 * v2_32 == 0_si32 );
+static_assert(min_32 * v2_16 == 0_si32 );
+static_assert(min_32 * v2_8  == 0_si32 );
+static_assert(min_16 * v2_64 == -0x1'0000_si64  );
+static_assert(min_16 * v2_32 == -0x1'0000_si32 );
+static_assert(min_16 * v2_16 == 0_si16 );
+static_assert(min_16 * v2_8  == 0_si16 );
+static_assert(min_8  * v2_64 == -256_si64 );
+static_assert(min_8  * v2_32 == -256_si32 );
+static_assert(min_8  * v2_16 == -256_si16 );
+static_assert(min_8  * v2_8  == 0_si8 );
+
+
+static_assert(v1_64 / vminus1_64 == -1_si64 );
+static_assert(v1_64 / vminus1_32 == -1_si64 );
+static_assert(v1_64 / vminus1_16 == -1_si64 );
+static_assert(v1_64 / vminus1_8  == -1_si64 );
+static_assert(v1_32 / vminus1_64 == -1_si64 );
+static_assert(v1_32 / vminus1_32 == -1_si32 );
+static_assert(v1_32 / vminus1_16 == -1_si32 );
+static_assert(v1_32 / vminus1_8  == -1_si32 );
+static_assert(v1_16 / vminus1_64 == -1_si64 );
+static_assert(v1_16 / vminus1_32 == -1_si32 );
+static_assert(v1_16 / vminus1_16 == -1_si16 );
+static_assert(v1_16 / vminus1_8  == -1_si16 );
+static_assert(v1_8  / vminus1_64 == -1_si64 );
+static_assert(v1_8  / vminus1_32 == -1_si32 );
+static_assert(v1_8  / vminus1_16 == -1_si16 );
+static_assert(v1_8  / vminus1_8  == -1_si8 );
+
+static_assert(vminus1_64 /  v1_64== -1_si64 );
+static_assert(vminus1_32 /  v1_64== -1_si64 );
+static_assert(vminus1_16 /  v1_64== -1_si64 );
+static_assert(vminus1_8  /  v1_64== -1_si64 );
+static_assert(vminus1_64 /  v1_32== -1_si64 );
+static_assert(vminus1_32 /  v1_32== -1_si32 );
+static_assert(vminus1_16 /  v1_32== -1_si32 );
+static_assert(vminus1_8  /  v1_32== -1_si32 );
+static_assert(vminus1_64 /  v1_16== -1_si64 );
+static_assert(vminus1_32 /  v1_16== -1_si32 );
+static_assert(vminus1_16 /  v1_16== -1_si16 );
+static_assert(vminus1_8  /  v1_16== -1_si16 );
+static_assert(vminus1_64 /  v1_8 == -1_si64 );
+static_assert(vminus1_32 /  v1_8 == -1_si32 );
+static_assert(vminus1_16 /  v1_8 == -1_si16 );
+static_assert(vminus1_8  /  v1_8 == -1_si8 );
+
+
+static_assert(v2_64 / vminus1_64 == -2_si64 );
+static_assert(v2_64 / vminus1_32 == -2_si64 );
+static_assert(v2_64 / vminus1_16 == -2_si64 );
+static_assert(v2_64 / vminus1_8  == -2_si64 );
+static_assert(v2_32 / vminus1_64 == -2_si64 );
+static_assert(v2_32 / vminus1_32 == -2_si32 );
+static_assert(v2_32 / vminus1_16 == -2_si32 );
+static_assert(v2_32 / vminus1_8  == -2_si32 );
+static_assert(v2_16 / vminus1_64 == -2_si64 );
+static_assert(v2_16 / vminus1_32 == -2_si32 );
+static_assert(v2_16 / vminus1_16 == -2_si16 );
+static_assert(v2_16 / vminus1_8  == -2_si16 );
+static_assert(v2_8  / vminus1_64 == -2_si64 );
+static_assert(v2_8  / vminus1_32 == -2_si32 );
+static_assert(v2_8  / vminus1_16 == -2_si16 );
+static_assert(v2_8  / vminus1_8  == -2_si8 );
+
+static_assert(vminus1_64 /  v2_64== 0_si64 );
+static_assert(vminus1_32 /  v2_64== 0_si64 );
+static_assert(vminus1_16 /  v2_64== 0_si64 );
+static_assert(vminus1_8  /  v2_64== 0_si64 );
+static_assert(vminus1_64 /  v2_32== 0_si64 );
+static_assert(vminus1_32 /  v2_32== 0_si32 );
+static_assert(vminus1_16 /  v2_32== 0_si32 );
+static_assert(vminus1_8  /  v2_32== 0_si32 );
+static_assert(vminus1_64 /  v2_16== 0_si64 );
+static_assert(vminus1_32 /  v2_16== 0_si32 );
+static_assert(vminus1_16 /  v2_16== 0_si16 );
+static_assert(vminus1_8  /  v2_16== 0_si16 );
+static_assert(vminus1_64 /  v2_8 == 0_si64 );
+static_assert(vminus1_32 /  v2_8 == 0_si32 );
+static_assert(vminus1_16 /  v2_8 == 0_si16 );
+static_assert(vminus1_8  /  v2_8 == 0_si8 );
+
+static_assert(min_64 /  min_64 ==  1_si64 );
+static_assert(min_32 /  min_64 ==  0_si64 );
+static_assert(min_16 /  min_64 ==  0_si64 );
+static_assert(min_8  /  min_64 ==  0_si64 );
+static_assert(min_64 /  min_32 ==  0x1'0000'0000_si64 );
+static_assert(min_32 /  min_32 ==  1_si32 );
+static_assert(min_16 /  min_32 ==  0_si32 );
+static_assert(min_8  /  min_32 ==  0_si32 );
+static_assert(min_64 /  min_16 ==  0x1'0000'0000'0000_si64 );
+static_assert(min_32 /  min_16 ==  0x1'0000_si32 );
+static_assert(min_16 /  min_16 ==  1_si16 );
+static_assert(min_8  /  min_16 ==  0_si16 );
+static_assert(min_64 /  min_8  ==  0x100'0000'0000'0000_si64 );
+static_assert(min_32 /  min_8  ==  0x100'0000_si32 );
+static_assert(min_16 /  min_8  ==  256_si16 );
+static_assert(min_8  /  min_8  ==  1_si8 );
+
+// demonstrate wrapping:
+static_assert(min_64 / vminus1_64 == min_64 );
+static_assert(min_64 / vminus1_32 == min_64 );
+static_assert(min_64 / vminus1_16 == min_64 );
+static_assert(min_64 / vminus1_8  == min_64 );
+static_assert(min_32 / vminus1_64 == 0x8000'0000_si64 );
+static_assert(min_32 / vminus1_32 == min_32 );
+static_assert(min_32 / vminus1_16 == min_32 );
+static_assert(min_32 / vminus1_8  == min_32 );
+static_assert(min_16 / vminus1_64 == -static_cast<si64>(min_16)  );
+static_assert(min_16 / vminus1_32 == 0x8000_si32 );
+static_assert(min_16 / vminus1_16 == min_16 );
+static_assert(min_16 / vminus1_8  == min_16 );
+static_assert(min_8  / vminus1_64 == 128_si64 );
+static_assert(min_8  / vminus1_32 == 128_si32 );
+static_assert(min_8  / vminus1_16 == 128_si16 );
+static_assert(min_8  / vminus1_8  == min_8 );
+
+static_assert(min_64 / v1_64 == min_64 );
+static_assert(min_64 / v1_32 == min_64 );
+static_assert(min_64 / v1_16 == min_64 );
+static_assert(min_64 / v1_8  == min_64 );
+static_assert(min_32 / v1_64 == -0x8000'0000_si64 );
+static_assert(min_32 / v1_32 == min_32 );
+static_assert(min_32 / v1_16 == min_32 );
+static_assert(min_32 / v1_8  == min_32 );
+static_assert(min_16 / v1_64 == -0x8000_si64  );
+static_assert(min_16 / v1_32 == -0x8000_si32 );
+static_assert(min_16 / v1_16 == min_16 );
+static_assert(min_16 / v1_8  == min_16 );
+static_assert(min_8  / v1_64 == -128_si64 );
+static_assert(min_8  / v1_32 == -128_si32 );
+static_assert(min_8  / v1_16 == -128_si16 );
+static_assert(min_8  / v1_8  == min_8 );
+
+static_assert(min_64 / v2_64 == -0x4000'0000'0000'0000_si64 );
+static_assert(min_64 / v2_32 == -0x4000'0000'0000'0000_si64  );
+static_assert(min_64 / v2_16 == -0x4000'0000'0000'0000_si64  );
+static_assert(min_64 / v2_8  == -0x4000'0000'0000'0000_si64 );
+static_assert(min_32 / v2_64 == -0x4000'0000_si64 );
+static_assert(min_32 / v2_32 == -0x4000'0000_si32 );
+static_assert(min_32 / v2_16 == -0x4000'0000_si32 );
+static_assert(min_32 / v2_8  == -0x4000'0000_si32 );
+static_assert(min_16 / v2_64 == -0x4000_si64  );
+static_assert(min_16 / v2_32 == -0x4000_si32 );
+static_assert(min_16 / v2_16 == -0x4000_si16 );
+static_assert(min_16 / v2_8  == -0x4000_si16 );
+static_assert(min_8  / v2_64 == -64_si64 );
+static_assert(min_8  / v2_32 == -64_si32 );
+static_assert(min_8  / v2_16 == -64_si16 );
+static_assert(min_8  / v2_8  == -64_si8 );
+
+
+static_assert(-100_si32 / -9_si64 == 11_si64);
+static_assert(100_si32 / 9_si64 == 11_si64);
+static_assert(-100_si32 / 9_si64 == -11_si64);
+static_assert(100_si32 / -9_si64 == -11_si64);
+
+static_assert(std::numeric_limits<si32>::min() / 1_si32 == std::numeric_limits<si32>::min()); // wraps
+static_assert(std::numeric_limits<si32>::min() / -1_si32 == std::numeric_limits<si32>::min()); // wraps
 
 template<typename T, typename WHAT>
 constexpr bool
@@ -183,7 +569,17 @@ static_assert(is_integer<std::underlying_type_t<si16>>);
 static_assert(!is_integer<si16>);
 
 
+void signedIntegerBoundaryTestResultRecovery(){
+    // temporary testcase for getting static_asserts above right
+    ASSERT_EQUAL(0x8000'0000_si64, max_32 + v1_64  );
 }
+
+
+}
+
+
+
+
 
 void ui16intExists() {
     using psssint::ui16;
@@ -456,8 +852,12 @@ void testNoUBforunsigned() {
 }
 
 bool runAllTests(int argc, char const *argv[]) {
+    cute::suite TestForZeroReturnAssertWithNDEBUG = make_suite_TestForZeroReturnAssertWithNDEBUG();
+    TestForZeroReturnAssertWithNDEBUG.push_back(CUTE(cppnowtalk::testUBforint));
+    TestForZeroReturnAssertWithNDEBUG.push_back(CUTE(cppnowtalk::testNoUBforunsigned));
+
     cute::suite s { };
-    //TODO add your test here
+
     s.push_back(CUTE(ui16intExists));
     s.push_back(CUTE(ui16NotEqualAutomaticInCpp20));
     s.push_back(CUTE(ui16canbeadded));
@@ -499,14 +899,12 @@ bool runAllTests(int argc, char const *argv[]) {
 	s.push_back(CUTE(ui16canbecompared));
 	s.push_back(CUTE(ui16canNotbecomparedwithui8));
 	s.push_back(CUTE(ui32CanNotbeComparedwithlong));
+	s.push_back(CUTE(_testing::signedIntegerBoundaryTestResultRecovery));
 	cute::xml_file_opener xmlfile(argc, argv);
     cute::xml_listener<cute::ide_listener<>> lis(xmlfile.out);
     auto runner = cute::makeRunner(lis, argc, argv);
     bool success = runner(s, "AllTests");
     success = runner(make_suite_CodeGenBenchmark(),"CodeGenBenchmark") && success;
-    cute::suite TestForZeroReturnAssertWithNDEBUG = make_suite_TestForZeroReturnAssertWithNDEBUG();
-	TestForZeroReturnAssertWithNDEBUG.push_back(CUTE(cppnowtalk::testUBforint));
-	TestForZeroReturnAssertWithNDEBUG.push_back(CUTE(cppnowtalk::testNoUBforunsigned));
     success &= runner(TestForZeroReturnAssertWithNDEBUG, "TestForZeroReturnAssertWithNDEBUG");
     return success;
 }

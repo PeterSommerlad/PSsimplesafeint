@@ -1,5 +1,5 @@
 <testsuites>
-	<testsuite name="AllTests" tests="41">
+	<testsuite name="AllTests" tests="42">
 		<testcase classname="AllTests" name="ui16intExists"/>
 		<testcase classname="AllTests" name="ui16NotEqualAutomaticInCpp20"/>
 		<testcase classname="AllTests" name="ui16canbeadded"/>
@@ -41,6 +41,7 @@
 		<testcase classname="AllTests" name="ui16canbecompared"/>
 		<testcase classname="AllTests" name="ui16canNotbecomparedwithui8"/>
 		<testcase classname="AllTests" name="ui32CanNotbeComparedwithlong"/>
+		<testcase classname="AllTests" name="_testing::signedIntegerBoundaryTestResultRecovery"/>
 	</testsuite>
 	<testsuite name="CodeGenBenchmark" tests="22">
 		<testcase classname="CodeGenBenchmark" name="codegenAdditionTest"/>
