@@ -322,15 +322,15 @@ static_assert(detail_::is_safeint_v<si64>);
 enum class enum4test{};
 static_assert(!detail_::is_safeint_v<enum4test>);
 static_assert(!detail_::is_safeint_v<std::byte>);
-static_assert(std::is_same_v<unsigned,decltype(to_int(1_ui8)+1)>);
-static_assert(std::is_same_v<unsigned,decltype(to_int(2_ui16)+1)>);
-static_assert(std::is_same_v<int,decltype(to_int(1_si8))>);
-static_assert(std::is_same_v<int,decltype(to_int(2_si16))>);
+static_assert(std::is_same_v<unsigned,decltype(promote_keep_signedness(1_ui8)+1)>);
+static_assert(std::is_same_v<unsigned,decltype(promote_keep_signedness(2_ui16)+1)>);
+static_assert(std::is_same_v<int,decltype(promote_keep_signedness(1_si8))>);
+static_assert(std::is_same_v<int,decltype(promote_keep_signedness(2_si16))>);
 static_assert(std::is_same_v<uint8_t,std::underlying_type_t<ui8>>);
 static_assert(std::is_same_v<uint16_t,std::underlying_type_t<ui16>>);
 
 
-static_assert(to_int(0xffff_ui16 * 0xffff_ui16) == 0x1u); // wraps
+static_assert(promote_keep_signedness(0xffff_ui16 * 0xffff_ui16) == 0x1u); // wraps
 static_assert(0xff_ui8 * 0xff_ui8 == 1_ui8);
 
 // the following does not compile due to signed integer overflow on 32bit int
