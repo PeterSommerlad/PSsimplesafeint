@@ -211,7 +211,7 @@
                             							
                             <tool command="g++" id="cdt.managedbuild.tool.gnu.cpp.compiler.macosx.exe.release.1174509067" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.macosx.exe.release">
                                 								
-                                <option id="gnu.cpp.compiler.macosx.exe.release.option.optimization.level.299337538" name="Optimization Level" superClass="gnu.cpp.compiler.macosx.exe.release.option.optimization.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
+                                <option id="gnu.cpp.compiler.macosx.exe.release.option.optimization.level.299337538" name="Optimization Level" superClass="gnu.cpp.compiler.macosx.exe.release.option.optimization.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.optimization.level.most" valueType="enumerated"/>
                                 								
                                 <option defaultValue="gnu.cpp.compiler.debugging.level.none" id="gnu.cpp.compiler.macosx.exe.release.option.debugging.level.1601136495" name="Debug Level" superClass="gnu.cpp.compiler.macosx.exe.release.option.debugging.level" useByScannerDiscovery="false" valueType="enumerated"/>
                                 								
@@ -232,6 +232,14 @@
                                 </option>
                                 								
                                 <option id="gnu.cpp.compiler.option.dialect.std.1849512521" name="Language standard" superClass="gnu.cpp.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.cpp.compiler.dialect.default" valueType="enumerated"/>
+                                								
+                                <option id="gnu.cpp.compiler.option.warnings.toerrors.52946213" name="Warnings as errors (-Werror)" superClass="gnu.cpp.compiler.option.warnings.toerrors" useByScannerDiscovery="false" value="true" valueType="boolean"/>
+                                								
+                                <option id="gnu.cpp.compiler.option.warnings.wconversion.821172653" name="Implicit conversion warnings (-Wconversion)" superClass="gnu.cpp.compiler.option.warnings.wconversion" useByScannerDiscovery="false" value="true" valueType="boolean"/>
+                                								
+                                <option id="gnu.cpp.compiler.option.warnings.pedantic.1955754923" name="Pedantic (-pedantic)" superClass="gnu.cpp.compiler.option.warnings.pedantic" useByScannerDiscovery="false" value="true" valueType="boolean"/>
+                                								
+                                <option id="gnu.cpp.compiler.option.warnings.pedantic.error.391256718" name="Pedantic warnings as errors (-pedantic-errors)" superClass="gnu.cpp.compiler.option.warnings.pedantic.error" useByScannerDiscovery="false" value="true" valueType="boolean"/>
                                 								
                                 <inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1556365900" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
                                 							
@@ -785,7 +793,7 @@
                                 								
                                 <option id="gnu.cpp.compiler.option.warnings.extrawarn.404081695" name="Extra warnings (-Wextra)" superClass="gnu.cpp.compiler.option.warnings.extrawarn" useByScannerDiscovery="false" value="true" valueType="boolean"/>
                                 								
-                                <option id="gnu.cpp.compiler.option.warnings.toerrors.34508149" name="Warnings as errors (-Werror)" superClass="gnu.cpp.compiler.option.warnings.toerrors" useByScannerDiscovery="false" value="false" valueType="boolean"/>
+                                <option id="gnu.cpp.compiler.option.warnings.toerrors.34508149" name="Warnings as errors (-Werror)" superClass="gnu.cpp.compiler.option.warnings.toerrors" useByScannerDiscovery="false" value="true" valueType="boolean"/>
                                 								
                                 <option id="gnu.cpp.compiler.option.warnings.wconversion.1256198766" name="Implicit conversion warnings (-Wconversion)" superClass="gnu.cpp.compiler.option.warnings.wconversion" useByScannerDiscovery="false" value="true" valueType="boolean"/>
                                 								

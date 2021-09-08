@@ -829,7 +829,11 @@ void testUBforint() {
     out << 65535 * 32768 << '\n';
     // prints: 2147450880
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Woverflow"
+#ifdef __clang__
+    #pragma clang diagnostic ignored "-Winteger-overflow"
+#else
+    #pragma GCC diagnostic ignored "-Woverflow"
+#endif
     out << 65536 * 32768 << '\n';
     //../src/Test.cpp:421:18: error: integer overflow in expression of type 'int' results in '-2147483648' [-Werror=overflow]
 #pragma GCC diagnostic pop
