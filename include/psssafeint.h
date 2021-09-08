@@ -105,9 +105,9 @@ ui64 operator""_ui64(unsigned long long val) {
 }
 // signed
 enum class si8 : std::int8_t { tag_to_prevent_mixing_other_enums };
-enum class si16: std::int16_t{tag_to_prevent_mixing_other_enums};
-enum class si32: std::int32_t{tag_to_prevent_mixing_other_enums};
-enum class si64: std::int64_t{tag_to_prevent_mixing_other_enums};
+enum class si16: std::int16_t{ tag_to_prevent_mixing_other_enums };
+enum class si32: std::int32_t{ tag_to_prevent_mixing_other_enums };
+enum class si64: std::int64_t{ tag_to_prevent_mixing_other_enums };
 
 inline namespace literals {
 consteval
@@ -307,12 +307,12 @@ namespace psssint{
 namespace detail_{
 
 #ifdef __cpp_concepts
-template<a_safeint E, a_safeint F>
+template<a_safeint LEFT, a_safeint RIGHT>
 #else
-template<typename E, typename F>
+template<typename LEFT, typename RIGHT>
 #endif
 constexpr bool
-same_signedness_v = detail_::is_safeint_v<E> && detail_::is_safeint_v<F> && std::numeric_limits<E>::is_signed == std::numeric_limits<F>::is_signed;
+same_signedness_v = detail_::is_safeint_v<LEFT> && detail_::is_safeint_v<RIGHT> && std::numeric_limits<LEFT>::is_signed == std::numeric_limits<RIGHT>::is_signed;
 
 template<typename CHAR>
 constexpr bool
@@ -355,8 +355,8 @@ is_known_integer_v =    is_similar_v<std::uint8_t,  TESTED>
 
 
 #ifdef __cpp_concepts
-template<typename E, typename F>
-concept same_signedness = detail_::same_signedness_v<E,F>;
+template<typename LEFT, typename RIGHT>
+concept same_signedness = detail_::same_signedness_v<LEFT,RIGHT>;
 #endif
 
 #ifdef __cpp_concepts
@@ -365,7 +365,7 @@ template<a_safeint E>
 template <typename E>
 #endif
 constexpr auto
-to_int(E val) noexcept
+promote_keep_signedness(E val) noexcept
 #ifndef __cpp_concepts
 -> std::enable_if_t<detail_::is_safeint_v<E>,detail_::promoted_t<E>>
 #endif
@@ -392,13 +392,11 @@ template<a_safeint E>
 template <typename E>
 #endif
 constexpr auto
-to_uint(E val) noexcept
+promote_to_unsigned(E val) noexcept
 { // promote to unsigned for wrap around arithmetic
     using u_result_t = std::make_unsigned_t<detail_::promoted_t<E>>;
-    using s_result_t = std::make_signed_t<u_result_t>;
-    return static_cast<u_result_t>(static_cast<s_result_t>(to_int(val)));
+    return static_cast<u_result_t>(promote_keep_signedness(val));
 }
-
 
 // deliberately not std::integral, because of bool!
 
@@ -408,12 +406,52 @@ concept an_integer = detail_::is_known_integer_v<T>;
 #endif
 
 #ifdef __cpp_concepts
+template<an_integer TARGET, a_safeint E>
+#else
+template<typename TARGET, typename E,std::enable_if_t<detail_::is_known_integer_v<TARGET> && detail_::is_safeint_v<E>,bool> = false >
+#endif
+constexpr auto
+promote_and_extend_to_unsigned(E val) noexcept
+{ // promote to unsigned for wrap around arithmetic, with sign extension if needed
+       using u_result_t = std::conditional_t< (sizeof(TARGET) > sizeof(detail_::promoted_t<E>)),
+                std::make_unsigned_t<TARGET>, std::make_unsigned_t<detail_::promoted_t<E> > >;
+       using s_result_t = std::make_signed_t<u_result_t>;
+       return static_cast<u_result_t>(static_cast<s_result_t>(promote_keep_signedness(val)));// promote with sign extension
+}
+#ifdef __cpp_concepts
+template<an_integer TARGET, a_safeint E>
+#else
+template<typename TARGET, typename E,std::enable_if_t<detail_::is_known_integer_v<TARGET> && detail_::is_safeint_v<E> && std::numeric_limits<TARGET>::is_signed,bool> = false >
+#endif
+constexpr auto
+abs_promoted_and_extended_as_unsigned(E val) noexcept
+#ifdef __cpp_concepts
+ requires (std::numeric_limits<TARGET>::is_signed)
+#endif
+{ // promote to unsigned for wrap around arithmetic removing sign if negative
+  // return just the bits for std::numeric_limits<TARGET>::min()
+       using promoted_t = detail_::promoted_t<E>;
+       using u_result_t = std::conditional_t< (sizeof(TARGET) > sizeof(promoted_t)),
+                std::make_unsigned_t<TARGET>, std::make_unsigned_t<promoted_t > >;
+       static_assert(std::is_unsigned_v<u_result_t>);
+       using s_result_t = std::make_signed_t<u_result_t>;
+       s_result_t value = promote_keep_signedness(val);
+       if (val < E{} && value > std::numeric_limits<s_result_t>::min()){
+           return static_cast<u_result_t>(-static_cast<s_result_t>(value)); // cannot overflow
+       } else {
+           return static_cast<u_result_t>(value);
+       }
+}
+
+
+
+#ifdef __cpp_concepts
 template<an_integer T>
 #else
 template<typename T, std::enable_if_t<detail_::is_known_integer_v<T>,bool> = false >
 #endif
 constexpr auto
-from_int(T val) {
+from_int(T val) noexcept {
     using detail_::is_similar_v;
     using std::conditional_t;
     struct cannot_convert_integer{};
@@ -444,6 +482,12 @@ from_int_to(FROM val) NOEXCEPT_WITH_THROWING_ASSERTS
 -> std::enable_if_t<detail_::is_known_integer_v<FROM>,TO>
 #endif
 {
+#ifdef NDEBUG
+#pragma GCC diagnostic push
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wterminate"
+#endif
+#endif
     using result_t = TO;
     using ultr = std::underlying_type_t<result_t>;
     if constexpr(std::is_unsigned_v<ultr>){
@@ -455,6 +499,10 @@ from_int_to(FROM val) NOEXCEPT_WITH_THROWING_ASSERTS
                                 val >= std::numeric_limits<ultr>::min()));
             return static_cast<result_t>(val);
     }
+#ifdef NDEBUG
+#pragma GCC diagnostic pop
+#endif
+
 }
 
 
@@ -486,7 +534,7 @@ operator-(E l) noexcept
 requires std::numeric_limits<E>::is_signed
 #endif
 {
-    return static_cast<E>(1u + ~to_uint(l));
+    return static_cast<E>(1u + ~promote_to_unsigned(l));
 }
 
 // increment/decrement
@@ -499,7 +547,7 @@ template<typename E, std::enable_if_t<detail_::is_safeint_v<E>,bool> = true>
 constexpr E&
 operator++(E& l) noexcept
 {
-    return l = static_cast<E>(1u + to_uint(l));
+    return l = static_cast<E>(1u + promote_to_unsigned(l));
 }
 
 #ifdef __cpp_concepts
@@ -521,7 +569,7 @@ template<typename E, std::enable_if_t<detail_::is_safeint_v<E>,bool> = true>
 #endif
 constexpr E&
 operator--(E& l) noexcept {
-    return l = static_cast<E>(to_uint(l) - 1u);
+    return l = static_cast<E>(promote_to_unsigned(l) - 1u);
 }
 
 #ifdef __cpp_concepts
@@ -543,365 +591,398 @@ operator--(E& l, int) noexcept {
 
 
 #ifdef __cpp_concepts
-template<a_safeint E, a_safeint F>
+template<a_safeint LEFT, a_safeint RIGHT>
 #else
-template<typename E, typename F,
+template<typename LEFT, typename RIGHT,
 std::enable_if_t<
-  detail_::is_safeint_v<E>
-  && detail_::is_safeint_v<F>
-  && detail_::same_signedness_v<E,F>
+  detail_::is_safeint_v<LEFT>
+  && detail_::is_safeint_v<RIGHT>
+  && detail_::same_signedness_v<LEFT,RIGHT>
 ,bool> = true>
 #endif
 constexpr auto
-operator+(E l, F r) noexcept
+operator+(LEFT l, RIGHT r) noexcept
 #if __cpp_concepts
-requires same_signedness<E,F>
+requires same_signedness<LEFT,RIGHT>
 #endif
 {
-    using result_t=std::conditional_t<sizeof(E)>=sizeof(F),E,F>;
+    // need to handle sign extension
+    using result_t=std::conditional_t<sizeof(LEFT)>=sizeof(RIGHT),LEFT,RIGHT>;
+    using ult = detail_::ULT<result_t>;
     return static_cast<result_t>(
-            static_cast<detail_::ULT<result_t>>(
-                    to_uint(l)
+            static_cast<ult>(
+                    promote_and_extend_to_unsigned<ult>(l)
                     + // use unsigned op to prevent signed overflow, but wrap.
-                    to_uint(r)
+                    promote_and_extend_to_unsigned<ult>(r)
             )
     );
 }
 
 
 #ifdef __cpp_concepts
-template<a_safeint E, a_safeint F>
+template<a_safeint LEFT, a_safeint RIGHT>
 #else
-template<typename E, typename F,
+template<typename LEFT, typename RIGHT,
 std::enable_if_t<
-  detail_::is_safeint_v<E>
-  && detail_::is_safeint_v<F>
-  && detail_::same_signedness_v<E,F>
+  detail_::is_safeint_v<LEFT>
+  && detail_::is_safeint_v<RIGHT>
+  && detail_::same_signedness_v<LEFT,RIGHT>
 ,bool> = true>
 #endif
 constexpr auto&
-operator+=(E &l, F r) noexcept
+operator+=(LEFT &l, RIGHT r) noexcept
 #ifdef __cpp_concepts
-requires same_signedness<E,F>
+requires same_signedness<LEFT,RIGHT>
 #endif
 {
-    static_assert(sizeof(E) >= sizeof(F),"adding too large integer type");
-    l = static_cast<E>(l+r);
+    static_assert(sizeof(LEFT) >= sizeof(RIGHT),"adding too large integer type");
+    l = static_cast<LEFT>(l+r);
     return l;
 }
 
 #ifdef __cpp_concepts
-template<a_safeint E, a_safeint F>
+template<a_safeint LEFT, a_safeint RIGHT>
 #else
-template<typename E, typename F,
+template<typename LEFT, typename RIGHT,
 std::enable_if_t<
-  detail_::is_safeint_v<E>
-  && detail_::is_safeint_v<F>
-  && detail_::same_signedness_v<E,F>
+  detail_::is_safeint_v<LEFT>
+  && detail_::is_safeint_v<RIGHT>
+  && detail_::same_signedness_v<LEFT,RIGHT>
 ,bool> = true>
 #endif
 constexpr auto
-operator-(E l, F r) noexcept
+operator-(LEFT l, RIGHT r) noexcept
 #ifdef __cpp_concepts
-requires same_signedness<E,F>
+requires same_signedness<LEFT,RIGHT>
 #endif
 {
-    using result_t=std::conditional_t<sizeof(E)>=sizeof(F),E,F>;
+    using result_t=std::conditional_t<sizeof(LEFT)>=sizeof(RIGHT),LEFT,RIGHT>;
+    using ult = detail_::ULT<result_t>;
+
     return static_cast<result_t>(
-            static_cast<detail_::ULT<result_t>>(
-                    to_uint(l)
+            static_cast<ult>(
+                    promote_and_extend_to_unsigned<ult>(l)
                     - // use unsigned op to prevent signed overflow, but wrap.
-                    to_uint(r)
+                    promote_and_extend_to_unsigned<ult>(r)
             )
     );
 }
 #ifdef __cpp_concepts
-template<a_safeint E, a_safeint F>
+template<a_safeint LEFT, a_safeint RIGHT>
 #else
-template<typename E, typename F,
+template<typename LEFT, typename RIGHT,
 std::enable_if_t<
-  detail_::is_safeint_v<E>
-  && detail_::is_safeint_v<F>
-  && detail_::same_signedness_v<E,F>
+  detail_::is_safeint_v<LEFT>
+  && detail_::is_safeint_v<RIGHT>
+  && detail_::same_signedness_v<LEFT,RIGHT>
 ,bool> = true>
 #endif
 constexpr auto&
-operator-=(E &l, F r) noexcept
+operator-=(LEFT &l, RIGHT r) noexcept
 #ifdef __cpp_concepts
-requires same_signedness<E,F>
+requires same_signedness<LEFT,RIGHT>
 #endif
 {
-    static_assert(sizeof(E) >= sizeof(F),"subtracting too large integer type");
-    l = static_cast<E>(l-r);
+    static_assert(sizeof(LEFT) >= sizeof(RIGHT),"subtracting too large integer type");
+    l = static_cast<LEFT>(l-r);
     return l;
 }
 
 
 #ifdef __cpp_concepts
-template<a_safeint E, a_safeint F>
+template<a_safeint LEFT, a_safeint RIGHT>
 #else
-template<typename E, typename F,
+template<typename LEFT, typename RIGHT,
 std::enable_if_t<
-  detail_::is_safeint_v<E>
-  && detail_::is_safeint_v<F>
-  && detail_::same_signedness_v<E,F>
+  detail_::is_safeint_v<LEFT>
+  && detail_::is_safeint_v<RIGHT>
+  && detail_::same_signedness_v<LEFT,RIGHT>
 ,bool> = true>
 #endif
 constexpr auto
-operator*(E l, F r) noexcept
+operator*(LEFT l, RIGHT r) noexcept
 #ifdef __cpp_concepts
-requires same_signedness<E,F>
+requires same_signedness<LEFT,RIGHT>
 #endif
 {
-    using result_t=std::conditional_t<sizeof(E)>=sizeof(F),E,F>;
+    using result_t=std::conditional_t<sizeof(LEFT)>=sizeof(RIGHT),LEFT,RIGHT>;
+    using ult = detail_::ULT<result_t>;
     return static_cast<result_t>(
-            static_cast<detail_::ULT<result_t>>(
-                    to_uint(l)
+            static_cast<ult>(
+                    promote_and_extend_to_unsigned<ult>(l)
                     * // use unsigned op to prevent signed overflow, but wrap.
-                    to_uint(r)
+                    promote_and_extend_to_unsigned<ult>(r)
             )
     );
 }
 #ifdef __cpp_concepts
-template<a_safeint E, a_safeint F>
+template<a_safeint LEFT, a_safeint RIGHT>
 #else
-template<typename E, typename F,
+template<typename LEFT, typename RIGHT,
 std::enable_if_t<
-  detail_::is_safeint_v<E>
-  && detail_::is_safeint_v<F>
-  && detail_::same_signedness_v<E,F>
+  detail_::is_safeint_v<LEFT>
+  && detail_::is_safeint_v<RIGHT>
+  && detail_::same_signedness_v<LEFT,RIGHT>
 ,bool> = true>
 #endif
 constexpr auto&
-operator*=(E &l, F r) noexcept
+operator*=(LEFT &l, RIGHT r) noexcept
 #ifdef __cpp_concepts
-requires same_signedness<E,F>
+requires same_signedness<LEFT,RIGHT>
 #endif
 {
-    static_assert(sizeof(E) >= sizeof(F),"multiplying too large integer type");
-    l = static_cast<E>(l*r);
+    static_assert(sizeof(LEFT) >= sizeof(RIGHT),"multiplying too large integer type");
+    l = static_cast<LEFT>(l*r);
     return l;
 }
 #ifdef __cpp_concepts
-template<a_safeint E, a_safeint F>
+template<a_safeint LEFT, a_safeint RIGHT>
 #else
-template<typename E, typename F,
+template<typename LEFT, typename RIGHT,
 std::enable_if_t<
-  detail_::is_safeint_v<E>
-  && detail_::is_safeint_v<F>
-  && detail_::same_signedness_v<E,F>
+  detail_::is_safeint_v<LEFT>
+  && detail_::is_safeint_v<RIGHT>
+  && detail_::same_signedness_v<LEFT,RIGHT>
 ,bool> = true>
 #endif
 constexpr auto
-operator/(E l, F r) NOEXCEPT_WITH_THROWING_ASSERTS
+operator/(LEFT l, RIGHT r) NOEXCEPT_WITH_THROWING_ASSERTS
 #ifdef __cpp_concepts
-requires same_signedness<E,F>
+requires same_signedness<LEFT,RIGHT>
 #endif
 {
-    using result_t=std::conditional_t<sizeof(E)>=sizeof(F),E,F>;
-    ps_assert(result_t{}, r != F{} && " division by zero");
+    using result_t=std::conditional_t<sizeof(LEFT)>=sizeof(RIGHT),LEFT,RIGHT>;
+    using ult = detail_::ULT<result_t>;
+
+#pragma GCC diagnostic push
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wterminate"
+#endif
+    ps_assert(result_t{}, r != RIGHT{} && " division by zero");
+#pragma GCC diagnostic pop
+    if constexpr (std::numeric_limits<result_t>::is_signed){
+        bool result_is_negative = (l < LEFT{}) != (r < RIGHT{});
+        auto absresult =  static_cast<result_t>(
+                             static_cast<ult>(
+                                abs_promoted_and_extended_as_unsigned<ult>(l)
+                                / // use unsigned op to prevent signed overflow, but wrap.
+                                abs_promoted_and_extended_as_unsigned<ult>(r)));
+        if (result_is_negative) {
+            return -absresult; // compute two's complement, not built-in
+        } else {
+            return absresult;
+        }
+    } else {
     return static_cast<result_t>(
-            static_cast<detail_::ULT<result_t>>(
-                    to_uint(l)
+            static_cast<ult>(
+                    promote_and_extend_to_unsigned<ult>(l)
                     / // use unsigned op to prevent signed overflow, but wrap.
-                    to_uint(r)
+                    promote_and_extend_to_unsigned<ult>(r)
             )
     );
+    }
+
 }
 #ifdef __cpp_concepts
-template<a_safeint E, a_safeint F>
+template<a_safeint LEFT, a_safeint RIGHT>
 #else
-template<typename E, typename F,
+template<typename LEFT, typename RIGHT,
 std::enable_if_t<
-  detail_::is_safeint_v<E>
-  && detail_::is_safeint_v<F>
-  && detail_::same_signedness_v<E,F>
+  detail_::is_safeint_v<LEFT>
+  && detail_::is_safeint_v<RIGHT>
+  && detail_::same_signedness_v<LEFT,RIGHT>
 ,bool> = true>
 #endif
 constexpr auto&
-operator/=(E &l, F r) noexcept
+operator/=(LEFT &l, RIGHT r) noexcept
 #ifdef __cpp_concepts
-requires same_signedness<E,F>
+requires same_signedness<LEFT,RIGHT>
 #endif
 {
-    static_assert(sizeof(E) >= sizeof(F),"dividing by too large integer type");
-    l = static_cast<E>(l/r);
+    static_assert(sizeof(LEFT) >= sizeof(RIGHT),"dividing by too large integer type");
+    l = static_cast<LEFT>(l/r);
     return l;
 }
 #ifdef __cpp_concepts
-template<a_safeint E, a_safeint F>
+template<a_safeint LEFT, a_safeint RIGHT>
 #else
-template<typename E, typename F,
+template<typename LEFT, typename RIGHT,
 std::enable_if_t<
-  detail_::is_safeint_v<E>
-  && detail_::is_safeint_v<F>
-  && detail_::same_signedness_v<E,F>
-  && std::is_unsigned_v<detail_::ULT<E>>
+  detail_::is_safeint_v<LEFT>
+  && detail_::is_safeint_v<RIGHT>
+  && detail_::same_signedness_v<LEFT,RIGHT>
+  && std::is_unsigned_v<detail_::ULT<LEFT>>
 ,bool> = true>
 #endif
 constexpr auto
-operator%(E l, F r) NOEXCEPT_WITH_THROWING_ASSERTS
+operator%(LEFT l, RIGHT r) NOEXCEPT_WITH_THROWING_ASSERTS
 #ifdef __cpp_concepts
-requires same_signedness<E,F> && std::is_unsigned_v<detail_::ULT<E>>
+requires same_signedness<LEFT,RIGHT> && std::is_unsigned_v<detail_::ULT<LEFT>>
 #endif
 {
-    using result_t=std::conditional_t<sizeof(E)>=sizeof(F),E,F>;
-    ps_assert(result_t{}, r != F{} && " division by zero");
+    using result_t=std::conditional_t<sizeof(LEFT)>=sizeof(RIGHT),LEFT,RIGHT>;
+    using ult = detail_::ULT<result_t>;
+#pragma GCC diagnostic push
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wterminate"
+#endif
+    ps_assert(result_t{}, r != RIGHT{} && " division by zero");
+#pragma GCC diagnostic pop
     return static_cast<result_t>(
-            static_cast<detail_::ULT<result_t>>(
-                    to_uint(l)
+            static_cast<ult>(
+                    promote_and_extend_to_unsigned<ult>(l)
                     % // use unsigned op to prevent signed overflow, but wrap.
-                    to_uint(r)
+                    promote_and_extend_to_unsigned<ult>(r)
             )
     );
 }
 #ifdef __cpp_concepts
-template<a_safeint E, a_safeint F>
+template<a_safeint LEFT, a_safeint RIGHT>
 #else
-template<typename E, typename F,
+template<typename LEFT, typename RIGHT,
 std::enable_if_t<
-  detail_::is_safeint_v<E>
-  && detail_::is_safeint_v<F>
-  && detail_::same_signedness_v<E,F>
-  && std::is_unsigned_v<detail_::ULT<E>>
+  detail_::is_safeint_v<LEFT>
+  && detail_::is_safeint_v<RIGHT>
+  && detail_::same_signedness_v<LEFT,RIGHT>
+  && std::is_unsigned_v<detail_::ULT<LEFT>>
 ,bool> = true>
 #endif
 constexpr auto&
-operator%=(E &l, F r) noexcept
+operator%=(LEFT &l, RIGHT r) noexcept
 #ifdef __cpp_concepts
-requires same_signedness<E,F> && std::is_unsigned_v<detail_::ULT<E>>
+requires same_signedness<LEFT,RIGHT> && std::is_unsigned_v<detail_::ULT<LEFT>>
 #endif
 {
-    static_assert(sizeof(E) >= sizeof(F),"dividing by too large integer type");
-    l = static_cast<E>(l%r);
+    static_assert(sizeof(LEFT) >= sizeof(RIGHT),"dividing by too large integer type");
+    l = static_cast<LEFT>(l%r);
     return l;
 }
 
 // bitwise operators
 
 #ifdef __cpp_concepts
-template<a_safeint E, a_safeint F>
+template<a_safeint LEFT, a_safeint RIGHT>
 #else
-template<typename E, typename F,
+template<typename LEFT, typename RIGHT,
 std::enable_if_t<
-  detail_::is_safeint_v<E>
-  && detail_::is_safeint_v<F>
-  && std::is_unsigned_v<detail_::ULT<E>>
-  && std::is_unsigned_v<detail_::ULT<F>>
+  detail_::is_safeint_v<LEFT>
+  && detail_::is_safeint_v<RIGHT>
+  && std::is_unsigned_v<detail_::ULT<LEFT>>
+  && std::is_unsigned_v<detail_::ULT<RIGHT>>
   ,bool> = true>
 #endif
 constexpr auto
-operator&(E l, F r) noexcept
+operator&(LEFT l, RIGHT r) noexcept
 #ifdef __cpp_concepts
-requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
+requires std::is_unsigned_v<detail_::ULT<LEFT>> && std::is_unsigned_v<detail_::ULT<RIGHT>>
 #endif
 {
-    using result_t=std::conditional_t<sizeof(E)>=sizeof(F),E,F>;
-    return static_cast<result_t>(to_int(l)&to_int(r));
+    using result_t=std::conditional_t<sizeof(LEFT)>=sizeof(RIGHT),LEFT,RIGHT>;
+    return static_cast<result_t>(promote_keep_signedness(l)&promote_keep_signedness(r));
 }
 #ifdef __cpp_concepts
-template<a_safeint E, a_safeint F>
+template<a_safeint LEFT, a_safeint RIGHT>
 #else
-template<typename E, typename F,
+template<typename LEFT, typename RIGHT,
 std::enable_if_t<
-  detail_::is_safeint_v<E>
-  && detail_::is_safeint_v<F>
-  && std::is_unsigned_v<detail_::ULT<E>>
-  && std::is_unsigned_v<detail_::ULT<F>>
+  detail_::is_safeint_v<LEFT>
+  && detail_::is_safeint_v<RIGHT>
+  && std::is_unsigned_v<detail_::ULT<LEFT>>
+  && std::is_unsigned_v<detail_::ULT<RIGHT>>
   ,bool> = true>
 #endif
 constexpr auto&
-operator&=(E &l, F r) noexcept
+operator&=(LEFT &l, RIGHT r) noexcept
 #ifdef __cpp_concepts
-requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
+requires std::is_unsigned_v<detail_::ULT<LEFT>> && std::is_unsigned_v<detail_::ULT<RIGHT>>
 #endif
 {
-    static_assert(sizeof(E) == sizeof(F),"bitand by different sized integer type");
-    l = static_cast<E>(l&r);
+    static_assert(sizeof(LEFT) == sizeof(RIGHT),"bitand by different sized integer type");
+    l = static_cast<LEFT>(l&r);
     return l;
 }
 
 #ifdef __cpp_concepts
-template<a_safeint E, a_safeint F>
+template<a_safeint LEFT, a_safeint RIGHT>
 #else
-template<typename E, typename F,
+template<typename LEFT, typename RIGHT,
 std::enable_if_t<
-  detail_::is_safeint_v<E>
-  && detail_::is_safeint_v<F>
-  && std::is_unsigned_v<detail_::ULT<E>>
-  && std::is_unsigned_v<detail_::ULT<F>>
+  detail_::is_safeint_v<LEFT>
+  && detail_::is_safeint_v<RIGHT>
+  && std::is_unsigned_v<detail_::ULT<LEFT>>
+  && std::is_unsigned_v<detail_::ULT<RIGHT>>
   ,bool> = true>
 #endif
 constexpr auto
-operator|(E l, F r) noexcept
+operator|(LEFT l, RIGHT r) noexcept
 #ifdef __cpp_concepts
-requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
+requires std::is_unsigned_v<detail_::ULT<LEFT>> && std::is_unsigned_v<detail_::ULT<RIGHT>>
 #endif
 {
-    using result_t=std::conditional_t<sizeof(E)>=sizeof(F),E,F>;
-    return static_cast<result_t>(to_int(l)|to_int(r));
+    using result_t=std::conditional_t<sizeof(LEFT)>=sizeof(RIGHT),LEFT,RIGHT>;
+    return static_cast<result_t>(promote_keep_signedness(l)|promote_keep_signedness(r));
 }
 #ifdef __cpp_concepts
-template<a_safeint E, a_safeint F>
+template<a_safeint LEFT, a_safeint RIGHT>
 #else
-template<typename E, typename F,
+template<typename LEFT, typename RIGHT,
 std::enable_if_t<
-  detail_::is_safeint_v<E>
-  && detail_::is_safeint_v<F>
-  && std::is_unsigned_v<detail_::ULT<E>>
-  && std::is_unsigned_v<detail_::ULT<F>>
+  detail_::is_safeint_v<LEFT>
+  && detail_::is_safeint_v<RIGHT>
+  && std::is_unsigned_v<detail_::ULT<LEFT>>
+  && std::is_unsigned_v<detail_::ULT<RIGHT>>
   ,bool> = true>
 #endif
 constexpr auto&
-operator|=(E &l, F r) noexcept
+operator|=(LEFT &l, RIGHT r) noexcept
 #ifdef __cpp_concepts
-requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
+requires std::is_unsigned_v<detail_::ULT<LEFT>> && std::is_unsigned_v<detail_::ULT<RIGHT>>
 #endif
 {
-    static_assert(sizeof(E) == sizeof(F),"bitor by different sized integer type");
-    l = static_cast<E>(l|r);
+    static_assert(sizeof(LEFT) == sizeof(RIGHT),"bitor by different sized integer type");
+    l = static_cast<LEFT>(l|r);
     return l;
 }
 
 #ifdef __cpp_concepts
-template<a_safeint E, a_safeint F>
+template<a_safeint LEFT, a_safeint RIGHT>
 #else
-template<typename E, typename F,
+template<typename LEFT, typename RIGHT,
 std::enable_if_t<
-  detail_::is_safeint_v<E>
-  && detail_::is_safeint_v<F>
-  && std::is_unsigned_v<detail_::ULT<E>>
-  && std::is_unsigned_v<detail_::ULT<F>>
+  detail_::is_safeint_v<LEFT>
+  && detail_::is_safeint_v<RIGHT>
+  && std::is_unsigned_v<detail_::ULT<LEFT>>
+  && std::is_unsigned_v<detail_::ULT<RIGHT>>
   ,bool> = true>
 #endif
 constexpr auto
-operator^(E l, F r) noexcept
+operator^(LEFT l, RIGHT r) noexcept
 #ifdef __cpp_concepts
-requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
+requires std::is_unsigned_v<detail_::ULT<LEFT>> && std::is_unsigned_v<detail_::ULT<RIGHT>>
 #endif
 {
-    using result_t=std::conditional_t<sizeof(E)>=sizeof(F),E,F>;
-    return static_cast<result_t>(to_int(l)^to_int(r));
+    using result_t=std::conditional_t<sizeof(LEFT)>=sizeof(RIGHT),LEFT,RIGHT>;
+    return static_cast<result_t>(promote_keep_signedness(l)^promote_keep_signedness(r));
 }
 #ifdef __cpp_concepts
-template<a_safeint E, a_safeint F>
+template<a_safeint LEFT, a_safeint RIGHT>
 #else
-template<typename E, typename F,
+template<typename LEFT, typename RIGHT,
 std::enable_if_t<
-  detail_::is_safeint_v<E>
-  && detail_::is_safeint_v<F>
-  && std::is_unsigned_v<detail_::ULT<E>>
-  && std::is_unsigned_v<detail_::ULT<F>>
+  detail_::is_safeint_v<LEFT>
+  && detail_::is_safeint_v<RIGHT>
+  && std::is_unsigned_v<detail_::ULT<LEFT>>
+  && std::is_unsigned_v<detail_::ULT<RIGHT>>
   ,bool> = true>
 #endif
 constexpr auto&
-operator^=(E &l, F r) noexcept
+operator^=(LEFT &l, RIGHT r) noexcept
 #ifdef __cpp_concepts
-requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
+requires std::is_unsigned_v<detail_::ULT<LEFT>> && std::is_unsigned_v<detail_::ULT<RIGHT>>
 #endif
 {
-    static_assert(sizeof(E) == sizeof(F),"xor by different sized integer type");
-    l = static_cast<E>(l^r);
+    static_assert(sizeof(LEFT) == sizeof(RIGHT),"xor by different sized integer type");
+    l = static_cast<LEFT>(l^r);
     return l;
 }
 
@@ -920,85 +1001,95 @@ operator~(E l) noexcept
 requires std::is_unsigned_v<detail_::ULT<E>>
 #endif
 {
-    return static_cast<E>(~to_int(l));
+    return static_cast<E>(~promote_keep_signedness(l));
 }
 
 
 #ifdef __cpp_concepts
-template<a_safeint E, a_safeint F>
+template<a_safeint LEFT, a_safeint RIGHT>
 #else
-template<typename E, typename F,
+template<typename LEFT, typename RIGHT,
 std::enable_if_t<
-  detail_::is_safeint_v<E>
-  && detail_::is_safeint_v<F>
-  && std::is_unsigned_v<detail_::ULT<E>>
-  && std::is_unsigned_v<detail_::ULT<F>>
+  detail_::is_safeint_v<LEFT>
+  && detail_::is_safeint_v<RIGHT>
+  && std::is_unsigned_v<detail_::ULT<LEFT>>
+  && std::is_unsigned_v<detail_::ULT<RIGHT>>
   ,bool> = true>
 #endif
-constexpr E
-operator<<(E l, F r) NOEXCEPT_WITH_THROWING_ASSERTS
+constexpr LEFT
+operator<<(LEFT l, RIGHT r) NOEXCEPT_WITH_THROWING_ASSERTS
 #ifdef __cpp_concepts
-requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
+requires std::is_unsigned_v<detail_::ULT<LEFT>> && std::is_unsigned_v<detail_::ULT<RIGHT>>
 #endif
 {
-    ps_assert(E{},static_cast<size_t>(to_int(r)) < sizeof(E)*CHAR_BIT && "trying to shift by too many bits");
-    return static_cast<E>(to_int(l)<<to_int(r));
+#pragma GCC diagnostic push
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wterminate"
+#endif
+    ps_assert(LEFT{},static_cast<size_t>(promote_keep_signedness(r)) < sizeof(LEFT)*CHAR_BIT && "trying to shift by too many bits");
+#pragma GCC diagnostic pop
+    return static_cast<LEFT>(promote_keep_signedness(l)<<promote_keep_signedness(r));
 }
 #ifdef __cpp_concepts
-template<a_safeint E, a_safeint F>
+template<a_safeint LEFT, a_safeint RIGHT>
 #else
-template<typename E, typename F,
+template<typename LEFT, typename RIGHT,
 std::enable_if_t<
-  detail_::is_safeint_v<E>
-  && detail_::is_safeint_v<F>
-  && std::is_unsigned_v<detail_::ULT<E>>
-  && std::is_unsigned_v<detail_::ULT<F>>
+  detail_::is_safeint_v<LEFT>
+  && detail_::is_safeint_v<RIGHT>
+  && std::is_unsigned_v<detail_::ULT<LEFT>>
+  && std::is_unsigned_v<detail_::ULT<RIGHT>>
   ,bool> = true>
 #endif
 constexpr auto&
-operator<<=(E &l, F r) noexcept
+operator<<=(LEFT &l, RIGHT r) noexcept
 #ifdef __cpp_concepts
-requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
+requires std::is_unsigned_v<detail_::ULT<LEFT>> && std::is_unsigned_v<detail_::ULT<RIGHT>>
 #endif
 {
     l = (l<<r);
     return l;
 }
 #ifdef __cpp_concepts
-template<a_safeint E, a_safeint F>
+template<a_safeint LEFT, a_safeint RIGHT>
 #else
-template<typename E, typename F,
+template<typename LEFT, typename RIGHT,
 std::enable_if_t<
-  detail_::is_safeint_v<E>
-  && detail_::is_safeint_v<F>
-  && std::is_unsigned_v<detail_::ULT<E>>
-  && std::is_unsigned_v<detail_::ULT<F>>
+  detail_::is_safeint_v<LEFT>
+  && detail_::is_safeint_v<RIGHT>
+  && std::is_unsigned_v<detail_::ULT<LEFT>>
+  && std::is_unsigned_v<detail_::ULT<RIGHT>>
   ,bool> = true>
 #endif
-constexpr E
-operator>>(E l, F r) NOEXCEPT_WITH_THROWING_ASSERTS
+constexpr LEFT
+operator>>(LEFT l, RIGHT r) NOEXCEPT_WITH_THROWING_ASSERTS
 #ifdef __cpp_concepts
-requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
+requires std::is_unsigned_v<detail_::ULT<LEFT>> && std::is_unsigned_v<detail_::ULT<RIGHT>>
 #endif
 {
-    ps_assert(E{},static_cast<size_t>(to_int(r)) < sizeof(E)*CHAR_BIT && "trying to shift by too many bits");
-    return static_cast<E>(to_int(l)>>to_int(r));
+#pragma GCC diagnostic push
+#if defined(__GNUG__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wterminate"
+#endif
+    ps_assert(LEFT{},static_cast<size_t>(promote_keep_signedness(r)) < sizeof(LEFT)*CHAR_BIT && "trying to shift by too many bits");
+#pragma GCC diagnostic pop
+    return static_cast<LEFT>(promote_keep_signedness(l)>>promote_keep_signedness(r));
 }
 #ifdef __cpp_concepts
-template<a_safeint E, a_safeint F>
+template<a_safeint LEFT, a_safeint RIGHT>
 #else
-template<typename E, typename F,
+template<typename LEFT, typename RIGHT,
 std::enable_if_t<
-  detail_::is_safeint_v<E>
-  && detail_::is_safeint_v<F>
-  && std::is_unsigned_v<detail_::ULT<E>>
-  && std::is_unsigned_v<detail_::ULT<F>>
+  detail_::is_safeint_v<LEFT>
+  && detail_::is_safeint_v<RIGHT>
+  && std::is_unsigned_v<detail_::ULT<LEFT>>
+  && std::is_unsigned_v<detail_::ULT<RIGHT>>
   ,bool> = true>
 #endif
 constexpr auto&
-operator>>=(E &l, F r) noexcept
+operator>>=(LEFT &l, RIGHT r) noexcept
 #ifdef __cpp_concepts
-requires std::is_unsigned_v<detail_::ULT<E>> && std::is_unsigned_v<detail_::ULT<F>>
+requires std::is_unsigned_v<detail_::ULT<LEFT>> && std::is_unsigned_v<detail_::ULT<RIGHT>>
 #endif
 {
     l = (l>>r);
@@ -1016,11 +1107,12 @@ std::enable_if_t<
 ,bool> = true>
 #endif
 std::ostream& operator<<(std::ostream &out, E value){
-    out << to_int(value);
+    out << promote_keep_signedness(value);
     return out;
 }
 
 }
 
+#undef ps_assert
 
 #endif /* SRC_PSSSAFEINT_ */

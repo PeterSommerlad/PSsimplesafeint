@@ -43,9 +43,13 @@ check_does_compile(not,  si8 , <<  )
 check_does_compile(   ,  ui8 , << )
 check_does_compile(not,  si8 , >>  )
 check_does_compile(   ,  ui8 , >> )
+#ifndef NDEBUG
 check_does_compile(not,  ui8 , + (1_ui8 << 010_ui8) + ) // too wide shift
+#endif
 check_does_compile(   ,  ui8 , + (1_ui8 << 7_ui8) + ) // not too wide shift
+#ifndef NDEBUG
 check_does_compile(not,  ui8 , + (0x80_ui8 >> 010_ui8) + ) // too wide shift
+#endif
 check_does_compile(   ,  ui8 , + (0x80_ui8 >> 7_ui8) + ) // not too wide shift
 check_does_compile(not,  si8 ,  % ) // modulo not working
 check_does_compile(   ,  ui8 , +( 1_ui8  / 1_ui8)+ ) // div
@@ -832,8 +836,14 @@ void testUBforint() {
     std::ostringstream out{};
     out << 65535 * 32768 << '\n';
     // prints: 2147450880
+
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Woverflow"
+#ifdef __clang__
+    #pragma clang diagnostic ignored "-Winteger-overflow"
+#else
+    #pragma GCC diagnostic ignored "-Woverflow"
+#endif
+    // for clang:
     out << 65536 * 32768 << '\n';
     //../src/Test.cpp:421:18: error: integer overflow in expression of type 'int' results in '-2147483648' [-Werror=overflow]
 #pragma GCC diagnostic pop
