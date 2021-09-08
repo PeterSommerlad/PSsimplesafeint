@@ -885,6 +885,12 @@
             		
         </scannerConfigBuildInfo>
         		
+        <scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.macosx.exe.debug.1203295807.200269656.173024449;cdt.managedbuild.config.gnu.macosx.exe.debug.1203295807.200269656.173024449.;cdt.managedbuild.tool.gnu.c.compiler.macosx.exe.debug.810615903;cdt.managedbuild.tool.gnu.c.compiler.input.927916169">
+            			
+            <autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+            		
+        </scannerConfigBuildInfo>
+        		
         <scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.macosx.exe.debug.1203295807.200269656;cdt.managedbuild.config.gnu.macosx.exe.debug.1203295807.200269656.;cdt.managedbuild.tool.gnu.cpp.compiler.macosx.exe.debug.1034911943;cdt.managedbuild.tool.gnu.cpp.compiler.input.1382415976">
             			
             <autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
@@ -892,6 +898,12 @@
         </scannerConfigBuildInfo>
         		
         <scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.macosx.exe.debug.1203295807;cdt.managedbuild.config.gnu.macosx.exe.debug.1203295807.;cdt.managedbuild.tool.gnu.cpp.compiler.macosx.exe.debug.2049645467;cdt.managedbuild.tool.gnu.cpp.compiler.input.1927792418">
+            			
+            <autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+            		
+        </scannerConfigBuildInfo>
+        		
+        <scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.macosx.exe.debug.1203295807.200269656.173024449;cdt.managedbuild.config.gnu.macosx.exe.debug.1203295807.200269656.173024449.;cdt.managedbuild.tool.gnu.cpp.compiler.macosx.exe.debug.695699406;cdt.managedbuild.tool.gnu.cpp.compiler.input.1695086212">
             			
             <autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
             		
