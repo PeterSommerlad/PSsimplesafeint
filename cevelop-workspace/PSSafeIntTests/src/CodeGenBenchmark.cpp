@@ -67,13 +67,13 @@ auto sumnegative(operations<si8> const &ops){
 void codegenAdditionTest() {
     auto resi8 = sum(operations<int8_t>{i8_seed});
     auto ressi8 =sum( operations<si8>{si8_seed});
-    ASSERT_EQUAL(resi8,to_int(ressi8));
+    ASSERT_EQUAL(resi8,promote_keep_signedness(ressi8));
 }
 
 void codegenMultiplicationTest(){
     auto resi8 = product(operations<int8_t>{i8_seed});
     auto ressi8 = product( operations<si8>{si8_seed});
-    ASSERT_EQUAL(resi8,to_int(ressi8));
+    ASSERT_EQUAL(resi8,promote_keep_signedness(ressi8));
     ASSERT_EQUAL(from_int(resi8),ressi8);
     ASSERTM("expect signed integer overflow not detected by ubsan",resi8 < 0);
     ASSERTM("expect signed integer overflow not detected by ubsan",ressi8 < 0_si8);
@@ -81,12 +81,12 @@ void codegenMultiplicationTest(){
 void codegenSumThirdsTest(){
     auto resi8 = sumthirds(operations<int8_t>{i8_seed});
     auto ressi8 = sumthirds( operations<si8>{si8_seed});
-    ASSERT_EQUAL(resi8,to_int(ressi8));
+    ASSERT_EQUAL(resi8,promote_keep_signedness(ressi8));
 }
 void codegenSubtractionTest(){
     auto resi8 = sumnegative(operations<int8_t>{i8_seed});
     auto ressi8 = sumnegative( operations<si8>{si8_seed});
-    ASSERT_EQUAL(resi8,to_int(ressi8));
+    ASSERT_EQUAL(resi8,promote_keep_signedness(ressi8));
 }
 
 namespace int16 {
@@ -121,13 +121,13 @@ auto sumnegative(operations<si16> const &ops){
 void codegenAdditionTest() {
     auto resi16 = sum(operations<int16_t>{i16_seed});
     auto ressi16 =sum( operations<si16>{si16_seed});
-    ASSERT_EQUAL(resi16,to_int(ressi16));
+    ASSERT_EQUAL(resi16,promote_keep_signedness(ressi16));
 }
 
 void codegenMultiplicationTest(){
     auto resi16 = product(operations<int16_t>{i16_seed});
     auto ressi16 = product( operations<si16>{si16_seed});
-    ASSERT_EQUAL(resi16,to_int(ressi16));
+    ASSERT_EQUAL(resi16,promote_keep_signedness(ressi16));
     ASSERT_EQUAL(from_int(resi16),ressi16);
     ASSERTM("expect signed integer overflow not detected by ubsan",resi16 < 0);
     ASSERTM("expect signed integer overflow not detected by ubsan",ressi16 < 0_si16);
@@ -137,12 +137,12 @@ void codegenMultiplicationTest(){
 void codegenSumThirdsTest(){
     auto resi16 = sumthirds(operations<int16_t>{i16_seed});
     auto ressi16 = sumthirds( operations<si16>{si16_seed});
-    ASSERT_EQUAL(resi16,to_int(ressi16));
+    ASSERT_EQUAL(resi16,promote_keep_signedness(ressi16));
 }
 void codegenSubtractionTest(){
     auto resi16 = sumnegative(operations<int16_t>{i16_seed});
     auto ressi16 = sumnegative( operations<si16>{si16_seed});
-    ASSERT_EQUAL(resi16,to_int(ressi16));
+    ASSERT_EQUAL(resi16,promote_keep_signedness(ressi16));
 }
 
 }
@@ -178,13 +178,13 @@ auto sumnegative(operations<si32> const &ops){
 void codegenAdditionTest() {
     auto resi32 = sum(operations<int32_t>{i32_seed});
     auto ressi32 =sum( operations<si32>{si32_seed});
-    ASSERT_EQUAL(resi32,to_int(ressi32));
+    ASSERT_EQUAL(resi32,promote_keep_signedness(ressi32));
 }
 
 void codegenMultiplicationTest(){
     auto resi32 = product(operations<int32_t>{i32_seed});
     auto ressi32 = product( operations<si32>{si32_seed});
-    ASSERT_EQUAL(resi32,to_int(ressi32));
+    ASSERT_EQUAL(resi32,promote_keep_signedness(ressi32));
     ASSERT_EQUAL(from_int(resi32),ressi32);
     ASSERTM("expect signed integer overflow detected by ubsan",resi32 < 0);
     ASSERTM("expect signed integer overflow not detected by ubsan",ressi32 < 0_si32);
@@ -194,12 +194,12 @@ void codegenMultiplicationTest(){
 void codegenSumThirdsTest(){
     auto resi32 = sumthirds(operations<int32_t>{i32_seed});
     auto ressi32 = sumthirds( operations<si32>{si32_seed});
-    ASSERT_EQUAL(resi32,to_int(ressi32));
+    ASSERT_EQUAL(resi32,promote_keep_signedness(ressi32));
 }
 void codegenSubtractionTest(){
     auto resi32 = sumnegative(operations<int32_t>{i32_seed});
     auto ressi32 = sumnegative( operations<si32>{si32_seed});
-    ASSERT_EQUAL(resi32,to_int(ressi32));
+    ASSERT_EQUAL(resi32,promote_keep_signedness(ressi32));
 }
 
 }
@@ -237,13 +237,13 @@ auto sumnegative(operations<si64> const &ops){
 void codegenAdditionTest() {
     auto resi64 = sum(operations<int64_t>{i64_seed});
     auto ressi64 =sum( operations<si64>{si64_seed});
-    ASSERT_EQUAL(resi64,to_int(ressi64));
+    ASSERT_EQUAL(resi64,promote_keep_signedness(ressi64));
 }
 
 void codegenMultiplicationTest(){
     auto resi64 = product(operations<int64_t>{i64_seed});
     auto ressi64 = product( operations<si64>{si64_seed});
-    ASSERT_EQUAL(resi64,to_int(ressi64));
+    ASSERT_EQUAL(resi64,promote_keep_signedness(ressi64));
     ASSERT_EQUAL(from_int(resi64),ressi64);
     ASSERTM("expect signed integer overflow detected by ubsan",resi64 < 0);
     ASSERTM("expect signed integer overflow not detected by ubsan",ressi64 < 0_si64);
@@ -253,12 +253,12 @@ void codegenMultiplicationTest(){
 void codegenSumThirdsTest(){
     auto resi64 = sumthirds(operations<int64_t>{i64_seed});
     auto ressi64 = sumthirds( operations<si64>{si64_seed});
-    ASSERT_EQUAL(resi64,to_int(ressi64));
+    ASSERT_EQUAL(resi64,promote_keep_signedness(ressi64));
 }
 void codegenSubtractionTest(){
     auto resi64 = sumnegative(operations<int64_t>{i64_seed});
     auto ressi64 = sumnegative( operations<si64>{si64_seed});
-    ASSERT_EQUAL(resi64,to_int(ressi64));
+    ASSERT_EQUAL(resi64,promote_keep_signedness(ressi64));
 }
 
 }
@@ -294,23 +294,23 @@ auto sumnegative(operations<ui32> const &ops){
 void codegenAdditionTest() {
     auto reui32 = sum(operations<uint32_t>{ui32_seed});
     auto resui32 =sum( operations<ui32>{uui32_seed});
-    ASSERT_EQUAL(reui32,to_int(resui32));
+    ASSERT_EQUAL(reui32,promote_keep_signedness(resui32));
 }
 
 void codegenMultiplicationTest(){
     auto reui32 = product(operations<uint32_t>{ui32_seed});
     auto resui32 = product( operations<ui32>{uui32_seed});
-    ASSERT_EQUAL(reui32,to_int(resui32));
+    ASSERT_EQUAL(reui32,promote_keep_signedness(resui32));
 }
 void codegenSumThirdsTest(){
     auto reui32 = sumthirds(operations<uint32_t>{ui32_seed});
     auto resui32 = sumthirds( operations<ui32>{uui32_seed});
-    ASSERT_EQUAL(reui32,to_int(resui32));
+    ASSERT_EQUAL(reui32,promote_keep_signedness(resui32));
 }
 void codegenSubtractionTest(){
     auto reui32 = sumnegative(operations<uint32_t>{ui32_seed});
     auto resui32 = sumnegative( operations<ui32>{uui32_seed});
-    ASSERT_EQUAL(reui32,to_int(resui32));
+    ASSERT_EQUAL(reui32,promote_keep_signedness(resui32));
 }
 
 }

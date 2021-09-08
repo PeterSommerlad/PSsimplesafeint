@@ -310,10 +310,12 @@ concept same_signedness = detail_::same_signedness_v<LEFT,RIGHT>;
 
 template<a_safeint E>
 constexpr auto
-to_int(E val) noexcept 
+promote_keep_signedness(E val) noexcept
 { // promote keeping signedness
     return static_cast<detail_::promoted_t<E>>(val);// promote with sign extension
 }
+
+// not used in framework:
 template<a_safeint E>
 constexpr auto
 to_underlying(E val) noexcept 
@@ -323,10 +325,10 @@ to_underlying(E val) noexcept
 
 template<a_safeint E>
 constexpr auto
-to_uint(E val) noexcept 
+promote_to_unsigned(E val) noexcept
 { // promote to unsigned for wrap around arithmetic
     using u_result_t = std::make_unsigned_t<detail_::promoted_t<E>>;
-    return static_cast<u_result_t>(to_int(val));
+    return static_cast<u_result_t>(promote_keep_signedness(val));
 }
 
 // deliberately not std::integral, because of bool and characters!
@@ -335,16 +337,16 @@ concept an_integer = detail_::is_known_integer_v<T>;
 
 template<an_integer TARGET, a_safeint E>
 constexpr auto
-to_uint_extend(E val) noexcept
+promote_and_extend_to_unsigned(E val) noexcept
 { // promote to unsigned for wrap around arithmetic, with sign extension if needed
        using u_result_t = std::conditional_t< (sizeof(TARGET) > sizeof(detail_::promoted_t<E>)),
                 std::make_unsigned_t<TARGET>, std::make_unsigned_t<detail_::promoted_t<E> > >;
        using s_result_t = std::make_signed_t<u_result_t>;
-       return static_cast<u_result_t>(static_cast<s_result_t>(to_int(val)));// promote with sign extension
+       return static_cast<u_result_t>(static_cast<s_result_t>(promote_keep_signedness(val)));// promote with sign extension
 }
 template<an_integer TARGET, a_safeint E>
 constexpr auto
-to_abs_extend(E val) noexcept
+abs_promoted_and_extended_as_unsigned(E val) noexcept
  requires (std::numeric_limits<TARGET>::is_signed)
 { // promote to unsigned for wrap around arithmetic removing sign if negative
   // return just the bits for std::numeric_limits<TARGET>::min()
@@ -353,7 +355,7 @@ to_abs_extend(E val) noexcept
                 std::make_unsigned_t<TARGET>, std::make_unsigned_t<promoted_t > >;
        static_assert(std::is_unsigned_v<u_result_t>);
        using s_result_t = std::make_signed_t<u_result_t>;
-       s_result_t value = to_int(val);
+       s_result_t value = promote_keep_signedness(val);
        if (val < E{} && value > std::numeric_limits<s_result_t>::min()){
            return static_cast<u_result_t>(-static_cast<s_result_t>(value)); // cannot overflow
        } else {
@@ -429,7 +431,7 @@ constexpr E
 operator-(E l) noexcept
 requires std::numeric_limits<E>::is_signed
 {
-    return static_cast<E>(1u + ~to_uint(l));
+    return static_cast<E>(1u + ~promote_to_unsigned(l));
 }
 
 // increment/decrement
@@ -438,7 +440,7 @@ template<a_safeint E>
 constexpr E&
 operator++(E& l) noexcept
 {
-    return l = static_cast<E>(1u + to_uint(l));
+    return l = static_cast<E>(1u + promote_to_unsigned(l));
 }
 
 template<a_safeint E>
@@ -452,7 +454,7 @@ operator++(E& l, int) noexcept
 template<a_safeint E>
 constexpr E&
 operator--(E& l) noexcept {
-    return l = static_cast<E>(to_uint(l) - 1u);
+    return l = static_cast<E>(promote_to_unsigned(l) - 1u);
 }
 
 template<a_safeint E>
@@ -479,9 +481,9 @@ requires same_signedness<LEFT,RIGHT>
     using ult = detail_::ULT<result_t>;
     return static_cast<result_t>(
             static_cast<ult>(
-                    to_uint_extend<ult>(l)
+                    promote_and_extend_to_unsigned<ult>(l)
                     + // use unsigned op to prevent signed overflow, but wrap.
-                    to_uint_extend<ult>(r)
+                    promote_and_extend_to_unsigned<ult>(r)
             )
     );
 }
@@ -507,9 +509,9 @@ requires same_signedness<LEFT,RIGHT>
 
     return static_cast<result_t>(
             static_cast<ult>(
-                    to_uint_extend<ult>(l)
+                    promote_and_extend_to_unsigned<ult>(l)
                     - // use unsigned op to prevent signed overflow, but wrap.
-                    to_uint_extend<ult>(r)
+                    promote_and_extend_to_unsigned<ult>(r)
             )
     );
 }
@@ -533,9 +535,9 @@ requires same_signedness<LEFT,RIGHT>
     using ult = detail_::ULT<result_t>;
     return static_cast<result_t>(
             static_cast<ult>(
-                    to_uint_extend<ult>(l)
+                    promote_and_extend_to_unsigned<ult>(l)
                     * // use unsigned op to prevent signed overflow, but wrap.
-                    to_uint_extend<ult>(r)
+                    promote_and_extend_to_unsigned<ult>(r)
             )
     );
 }
@@ -566,9 +568,9 @@ requires same_signedness<LEFT,RIGHT>
         bool result_is_negative = (l < LEFT{}) != (r < RIGHT{});
         auto absresult =  static_cast<result_t>(
                              static_cast<ult>(
-                                to_abs_extend<ult>(l)
+                                abs_promoted_and_extended_as_unsigned<ult>(l)
                                 / // use unsigned op to prevent signed overflow, but wrap.
-                                to_abs_extend<ult>(r)));
+                                abs_promoted_and_extended_as_unsigned<ult>(r)));
         if (result_is_negative) {
             return -absresult; // compute two's complement, not built-in
         } else {
@@ -577,9 +579,9 @@ requires same_signedness<LEFT,RIGHT>
     } else {
     return static_cast<result_t>(
             static_cast<ult>(
-                    to_uint_extend<ult>(l)
+                    promote_and_extend_to_unsigned<ult>(l)
                     / // use unsigned op to prevent signed overflow, but wrap.
-                    to_uint_extend<ult>(r)
+                    promote_and_extend_to_unsigned<ult>(r)
             )
     );
     }
@@ -609,9 +611,9 @@ requires same_signedness<LEFT,RIGHT> && std::is_unsigned_v<detail_::ULT<LEFT>>
 #pragma GCC diagnostic pop
     return static_cast<result_t>(
             static_cast<ult>(
-                    to_uint_extend<ult>(l)
+                    promote_and_extend_to_unsigned<ult>(l)
                     % // use unsigned op to prevent signed overflow, but wrap.
-                    to_uint_extend<ult>(r)
+                    promote_and_extend_to_unsigned<ult>(r)
             )
     );
 }
@@ -633,7 +635,7 @@ operator&(LEFT l, RIGHT r) noexcept
 requires std::is_unsigned_v<detail_::ULT<LEFT>> && std::is_unsigned_v<detail_::ULT<RIGHT>>
 {
     using result_t=std::conditional_t<sizeof(LEFT)>=sizeof(RIGHT),LEFT,RIGHT>;
-    return static_cast<result_t>(to_int(l)&to_int(r));
+    return static_cast<result_t>(promote_keep_signedness(l)&promote_keep_signedness(r));
 }
 template<a_safeint LEFT, a_safeint RIGHT>
 constexpr auto&
@@ -651,7 +653,7 @@ operator|(LEFT l, RIGHT r) noexcept
 requires std::is_unsigned_v<detail_::ULT<LEFT>> && std::is_unsigned_v<detail_::ULT<RIGHT>>
 {
     using result_t=std::conditional_t<sizeof(LEFT)>=sizeof(RIGHT),LEFT,RIGHT>;
-    return static_cast<result_t>(to_int(l)|to_int(r));
+    return static_cast<result_t>(promote_keep_signedness(l)|promote_keep_signedness(r));
 }
 template<a_safeint LEFT, a_safeint RIGHT>
 constexpr auto&
@@ -669,7 +671,7 @@ operator^(LEFT l, RIGHT r) noexcept
 requires std::is_unsigned_v<detail_::ULT<LEFT>> && std::is_unsigned_v<detail_::ULT<RIGHT>>
 {
     using result_t=std::conditional_t<sizeof(LEFT)>=sizeof(RIGHT),LEFT,RIGHT>;
-    return static_cast<result_t>(to_int(l)^to_int(r));
+    return static_cast<result_t>(promote_keep_signedness(l)^promote_keep_signedness(r));
 }
 template<a_safeint LEFT, a_safeint RIGHT>
 constexpr auto&
@@ -686,7 +688,7 @@ constexpr LEFT
 operator~(LEFT l) noexcept
 requires std::is_unsigned_v<detail_::ULT<LEFT>>
 {
-    return static_cast<LEFT>(~to_int(l));
+    return static_cast<LEFT>(~promote_keep_signedness(l));
 }
 
 
@@ -699,9 +701,9 @@ requires std::is_unsigned_v<detail_::ULT<LEFT>> && std::is_unsigned_v<detail_::U
 #if defined(__GNUG__) && !defined(__clang__)
 #pragma GCC diagnostic ignored "-Wterminate"
 #endif
-    ps_assert(LEFT{},static_cast<size_t>(to_int(r)) < sizeof(LEFT)*CHAR_BIT && "trying to shift by too many bits");
+    ps_assert(LEFT{},static_cast<size_t>(promote_keep_signedness(r)) < sizeof(LEFT)*CHAR_BIT && "trying to shift by too many bits");
 #pragma GCC diagnostic pop
-    return static_cast<LEFT>(to_int(l)<<to_int(r));
+    return static_cast<LEFT>(promote_keep_signedness(l)<<promote_keep_signedness(r));
 }
 template<a_safeint LEFT, a_safeint RIGHT>
 constexpr auto&
@@ -720,9 +722,9 @@ requires std::is_unsigned_v<detail_::ULT<LEFT>> && std::is_unsigned_v<detail_::U
 #if defined(__GNUG__) && !defined(__clang__)
 #pragma GCC diagnostic ignored "-Wterminate"
 #endif
-    ps_assert(LEFT{},static_cast<size_t>(to_int(r)) < sizeof(LEFT)*CHAR_BIT && "trying to shift by too many bits");
+    ps_assert(LEFT{},static_cast<size_t>(promote_keep_signedness(r)) < sizeof(LEFT)*CHAR_BIT && "trying to shift by too many bits");
 #pragma GCC diagnostic pop
-    return static_cast<LEFT>(to_int(l)>>to_int(r));
+    return static_cast<LEFT>(promote_keep_signedness(l)>>promote_keep_signedness(r));
 }
 template<a_safeint LEFT, a_safeint RIGHT>
 constexpr auto&
@@ -736,7 +738,7 @@ requires std::is_unsigned_v<detail_::ULT<LEFT>> && std::is_unsigned_v<detail_::U
 
 //template<a_safeint RIGHT>
 std::ostream& operator<<(std::ostream &out, a_safeint auto value){
-    out << to_int(value);
+    out << promote_keep_signedness(value);
     return out;
 }
 
