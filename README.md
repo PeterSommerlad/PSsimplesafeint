@@ -6,6 +6,14 @@
 
 ![conan check](https://github.com/PeterSommerlad/PSsimplesafeint/actions/workflows/runconantest.yml/badge.svg?branch=main)
 
+## IMPORTANT UPDATE (as of 2021-09-08)
+
+It turned out that signed integer division and sign extension is harder to get right than I naïvely thought. 
+However, more test cases helped to figure out the corner cases either not covered, or causing UB.
+If you are already using this library, please update!
+
+
+## Introduction
 
 A C++20 implementation of safe (wrap around) integers following MISRA C++ rules.
 
