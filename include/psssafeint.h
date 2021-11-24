@@ -7,13 +7,6 @@
 #include <limits>
 #include <climits>
 
-#if 0 // todo: this works with NDEBUG, but causes a linker error if no optimization:
-extern void this_function_is_only_called_because_assertion_failed_at_compiletime(char const *);\
-       if (not (cond)) this_function_is_only_called_because_assertion_failed_at_compiletime(#cond); /* compile error */\
-
-#else
-       // throws below produces a warning -Wno_terminate to turn off or pragmas... what to do? chose to ignore warning false positive
-#endif
 
 #ifdef NDEBUG
   #define ps_assert(default_value, cond) \
