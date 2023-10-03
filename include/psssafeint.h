@@ -34,10 +34,10 @@
 namespace psssint { // Peter Sommerlad's simple safe integers
 
 // unsigned 
-enum class ui8 : std::uint8_t { tag_to_prevent_mixing_other_enums };
-enum class ui16: std::uint16_t{ tag_to_prevent_mixing_other_enums };
-enum class ui32: std::uint32_t{ tag_to_prevent_mixing_other_enums };
-enum class ui64: std::uint64_t{ tag_to_prevent_mixing_other_enums };
+enum class [[nodiscard]] ui8 : std::uint8_t { tag_to_prevent_mixing_other_enums };
+enum class [[nodiscard]] ui16: std::uint16_t{ tag_to_prevent_mixing_other_enums };
+enum class [[nodiscard]] ui32: std::uint32_t{ tag_to_prevent_mixing_other_enums };
+enum class [[nodiscard]] ui64: std::uint64_t{ tag_to_prevent_mixing_other_enums };
 
 inline namespace literals {
 consteval
@@ -82,10 +82,10 @@ ui64 operator""_ui64(unsigned long long val) {
 
 }
 // signed
-enum class si8 : std::int8_t { tag_to_prevent_mixing_other_enums };
-enum class si16: std::int16_t{ tag_to_prevent_mixing_other_enums };
-enum class si32: std::int32_t{ tag_to_prevent_mixing_other_enums };
-enum class si64: std::int64_t{ tag_to_prevent_mixing_other_enums };
+enum class [[nodiscard]] si8 : std::int8_t { tag_to_prevent_mixing_other_enums };
+enum class [[nodiscard]] si16: std::int16_t{ tag_to_prevent_mixing_other_enums };
+enum class [[nodiscard]] si32: std::int32_t{ tag_to_prevent_mixing_other_enums };
+enum class [[nodiscard]] si64: std::int64_t{ tag_to_prevent_mixing_other_enums };
 
 inline namespace literals {
 consteval
@@ -302,6 +302,7 @@ template<typename LEFT, typename RIGHT>
 concept same_signedness = detail_::same_signedness_v<LEFT,RIGHT>;
 
 template<a_safeint E>
+[[nodiscard]]
 constexpr auto
 promote_keep_signedness(E val) noexcept
 { // promote keeping signedness
@@ -310,6 +311,7 @@ promote_keep_signedness(E val) noexcept
 
 // not used in framework:
 template<a_safeint E>
+[[nodiscard]]
 constexpr auto
 to_underlying(E val) noexcept 
 { // plain value with all bad properties
@@ -317,6 +319,7 @@ to_underlying(E val) noexcept
 }
 
 template<a_safeint E>
+[[nodiscard]]
 constexpr auto
 promote_to_unsigned(E val) noexcept
 { // promote to unsigned for wrap around arithmetic
@@ -329,6 +332,7 @@ template<typename T>
 concept an_integer = detail_::is_known_integer_v<T>;
 
 template<an_integer TARGET, a_safeint E>
+[[nodiscard]]
 constexpr auto
 promote_and_extend_to_unsigned(E val) noexcept
 { // promote to unsigned for wrap around arithmetic, with sign extension if needed
@@ -338,6 +342,7 @@ promote_and_extend_to_unsigned(E val) noexcept
        return static_cast<u_result_t>(static_cast<s_result_t>(promote_keep_signedness(val)));// promote with sign extension
 }
 template<an_integer TARGET, a_safeint E>
+[[nodiscard]]
 constexpr auto
 abs_promoted_and_extended_as_unsigned(E val) noexcept
  requires (std::numeric_limits<TARGET>::is_signed)
@@ -362,6 +367,7 @@ abs_promoted_and_extended_as_unsigned(E val) noexcept
 
 
 template<an_integer T>
+[[nodiscard]]
 constexpr auto
 from_int(T val) noexcept {
     using detail_::is_similar_v;
@@ -379,8 +385,8 @@ from_int(T val) noexcept {
     return static_cast<result_t>(val);
 }
 template<a_safeint TO, an_integer FROM>
-constexpr 
-auto
+[[nodiscard]]
+constexpr auto
 from_int_to(FROM val) NOEXCEPT_WITH_THROWING_ASSERTS
 {
 #ifdef NDEBUG
