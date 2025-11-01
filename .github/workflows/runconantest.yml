@@ -18,7 +18,7 @@ jobs:
         working-directory: ${{github.workspace}}/
         shell: bash
         env: 
-          CC:  gcc-10
-          CXX: g++-10
+          CC:  gcc
+          CXX: g++
         run: |
           conan create . PeterSommerlad/testing -s compiler=gcc -s compiler.version=10 -s compiler.libcxx=libstdc++11 -s compiler.cppstd=20
