@@ -12,16 +12,16 @@ jobs:
         working-directory: ${{github.workspace}}/build
         shell: bash
         env:
-          CC:   gcc-10
-          CXX:  g++-10
+          CC:   gcc-15
+          CXX:  g++-15
         run: cmake ${{github.workspace}}/cevelop-workspace/PSSafeIntTests/
         
       - name: Build
         working-directory: ${{github.workspace}}/build
         shell: bash
         env:
-          CC:   gcc-10
-          CXX:  g++-10
+          CC:   gcc-15
+          CXX:  g++-15
         run: cmake --build . -- CXX_FLAGS="-std=c++20 -DPS_ASSERT_THROWS -O2"
         
       - name: Test
@@ -32,16 +32,16 @@ jobs:
         working-directory: ${{github.workspace}}/build
         shell: bash
         env:
-          CC:   gcc-10
-          CXX:  g++-10
+          CC:   gcc-15
+          CXX:  g++-15
         run: cmake ${{github.workspace}}/cevelop-workspace/PSSafeIntTests/ -DCMAKE_BUILD_TYPE=Release
         
       - name: Build ndebug
         working-directory: ${{github.workspace}}/build
         shell: bash
         env:
-          CC:   gcc-10
-          CXX:  g++-10
+          CC:   gcc-15
+          CXX:  g++-15
         run: cmake --build . -- CXX_FLAGS="-std=c++20 -DPS_ASSERT_THROWS -O2"
         
       - name: Test ndebug
@@ -52,16 +52,16 @@ jobs:
         working-directory: ${{github.workspace}}/build
         shell: bash
         env:
-          CC:   gcc-10
-          CXX:  g++-10
+          CC:   gcc-15
+          CXX:  g++-15
         run: cmake ${{github.workspace}}/cevelop-workspace/PSSafeIntTests/ -DCMAKE_BUILD_TYPE=Throw
         
       - name: Build throw
         working-directory: ${{github.workspace}}/build
         shell: bash
         env:
-          CC:   gcc-10
-          CXX:  g++-10
+          CC:   gcc-15
+          CXX:  g++-15
         run: cmake --build . -- CXX_FLAGS="-std=c++20 -DPS_ASSERT_THROWS -O2"
         
       - name: Test throw
