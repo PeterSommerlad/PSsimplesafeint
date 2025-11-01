@@ -13,29 +13,31 @@
 using namespace psssint::literals;
 
 static_assert(0x8000_ui16 == 32768_ui16);
+template<auto ...value>
+using consume_value = void;
 
 namespace _testing {
 
 namespace compile_checks {
 using namespace psssint;
-template<auto ...value>
-using consume_value = void;
 
 
 
 #define concat_line_impl(A, B) A##_##B
 #define concat_line(A, B) concat_line_impl(A,B)
 
-#define check_does_compile(NOT, FROM, oper) \
+#define check_expr_does_compile(NOT, FROM, expr) \
 namespace concat_line(NOT##_test, __LINE__) { \
         template<typename T, typename=void>\
         constexpr bool\
         expression_compiles{false};\
 template<typename T> \
 constexpr bool \
-expression_compiles<T, consume_value<(T{} oper T{})> > {true};\
-static_assert(NOT expression_compiles<FROM>, "should " #NOT " compile: " #FROM "{}" #oper #FROM "{}");\
+expression_compiles<T, consume_value< (expr) > > {true};\
+static_assert(NOT expression_compiles<FROM>, "should " #NOT " compile: " #expr );\
 } // namespace tag
+
+#define check_does_compile(NOT, FROM, OPER) check_expr_does_compile(NOT, FROM, (T{} OPER T{}))
 
 
 // need to be on separate lines for disambiguation
@@ -51,15 +53,14 @@ check_does_compile(not,  ui8 ,  % ) // modulo 0
 check_does_compile(not,  si8 ,  / ) // div 0
 check_does_compile(not,  si8 ,  % ) // modulo not working
 check_does_compile(not,  ui8 ,  / ) // div 0
-check_does_compile(   ,  ui8 , +( 1_ui8  / 1_ui8)+ ) // div
-check_does_compile(   ,  ui8 , +( 11_ui8  % 3_ui8)+ ) // mod
+check_expr_does_compile(   ,  ui8 , ( 1_ui8  / 1_ui8) ) // div
+check_expr_does_compile(   ,  ui8 , ( 11_ui8  % 3_ui8) ) // mod
 check_does_compile(not,  ui8 , + 1_si8 + ) // mixed
 check_does_compile(   ,  ui8 , + 255_ui8 + 1_ui8 + ) // wrap
 
+
+
 }
-#undef check_does_compile
-#undef concat_line_impl
-#undef concat_line
 
 template<typename FROM, typename=void>
 constexpr bool
@@ -144,6 +145,15 @@ static_assert(-0x7fff'ffff_si32 - 2_si32 == 0x7fff'ffff_si32);
 static_assert(std::is_same_v<int,decltype(+to_underlying(42_ui8))>);
 static_assert(std::is_same_v<uint8_t,decltype(to_underlying(42_ui8))>);
 
+// doesn't work directly, because concept check in constrained template from_int causes hard failure
+namespace _testing {
+namespace compile_checks {
+constexpr auto from_int(auto b){return b;} // provide overload to make concept check not be a hard error
+check_expr_does_compile(not , ui8,(T(32) == from_int(' ')) ) // expression must depend on template parameter T
+check_expr_does_compile(not , ui8,(T(32) == from_int(u' ')) ) // expression must depend on template parameter T
+check_expr_does_compile(not , ui8,(T(32) == from_int(U' ')) ) // expression must depend on template parameter T
+check_expr_does_compile(not , ui8,(T(32) == from_int(L' ')) ) // expression must depend on template parameter T
+}}
 static_assert(1_ui8 == from_int(uint8_t(1)));
 static_assert(42_si8 == from_int_to<si8>(42));
 //static_assert(32_ui8 == from_int(' ')); // does not compile
@@ -568,6 +578,10 @@ static_assert(!is_integer<ui16>);
 static_assert(is_integer<std::underlying_type_t<si16>>);
 static_assert(!is_integer<si16>);
 
+#undef check_does_compile
+#undef check_expr_does_compile
+#undef concat_line_impl
+#undef concat_line
 
 void signedIntegerBoundaryTestResultRecovery(){
     // temporary testcase for getting static_asserts above right
@@ -811,7 +825,7 @@ void checkedFromInt(){
     ASSERT_EQUAL(0_ui8,from_int_to<ui8>(2400u));
 #else
   #ifdef PS_ASSERT_THROWS
-    ASSERT_THROWS(from_int_to<ui8>(2400u), char const *);
+    ASSERT_THROWS((void)from_int_to<ui8>(2400u), char const *);
   #else
     #ifdef PS_TEST_TRAP
     ASSERTM("cannot test trapping without NDEBUG set, change this to true to check for assert() behavior ",false);
