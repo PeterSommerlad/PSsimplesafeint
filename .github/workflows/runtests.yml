@@ -14,7 +14,7 @@ jobs:
         env:
           CC:   gcc-15
           CXX:  g++-15
-        run: cmake ${{github.workspace}}/cevelop-workspace/PSSafeIntTests/
+        run: CC=gcc CXX=g++ cmake ${{github.workspace}}/cevelop-workspace/PSSafeIntTests/
         
       - name: Build
         working-directory: ${{github.workspace}}/build
