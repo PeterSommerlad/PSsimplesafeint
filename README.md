@@ -4,9 +4,20 @@
 
 <br/>
 
-![conan check](https://github.com/PeterSommerlad/PSsimplesafeint/actions/workflows/runconantest.yml/badge.svg?branch=main)
+<!-- need to make new conan2 infra: ![conan check](https://github.com/PeterSommerlad/PSsimplesafeint/actions/workflows/runconantest.yml/badge.svg?branch=main) -->
 
-## IMPORTANT UPDATE (as of 2021-09-08)
+## Important Information:
+
+There is a new version of this funcitonality under a new name: [PSsMOIN](https://github.com/PeterSommerlad/PSsMOIN) (simpe modulo arithmetic integers) with 2 C++20 only implementations, one same as this one with `enum class` types and another one with class types wrapping the integers. While as of today both gcc and clang generate (almost) identical code for both versions, other compilers create much less efficient code for the class types than for the enumeration types. Note, types should only be a compile-time thing (unless they aren't).
+
+The error handling is still somehow configurable but with fewer knobs. You either get an exception throwing a `char const *` with an error message or one can opt for getting a signal `SIGFPE` for invalid operations.
+
+PSsMOIN is accompanied by updated versions of the following variations of safer integer replacement types:
+
+* overflow detection [PSsODIN](https://github.com/PeterSommerlad/PSsODIN)
+* saturation arithmetic [PSsSATIN](https://github.com/PeterSommerlad/PSsSATIN)
+
+### IMPORTANT UPDATE (as of 2021-09-08)
 
 It turned out that signed integer division and sign extension is harder to get right than I naïvely thought. 
 However, more test cases helped to figure out the corner cases either not covered, or causing UB.
